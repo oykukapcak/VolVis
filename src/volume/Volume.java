@@ -21,6 +21,21 @@ public class Volume {
 	//////////////////////////////////////////////////////////////////////
 	//////////////////////////////////////////////////////////////////////
 	//////////////////////////////////////////////////////////////////////
+
+	//Do NOT modify this function
+	public short getVoxelNN(double[] coord) {
+	        if (coord[0] < 0 || coord[0] > (dimX-1) || coord[1] < 0 || coord[1] > (dimY-1)
+	                || coord[2] < 0 || coord[2] > (dimZ-1)) {
+	            return 0;
+	        }
+	        /* notice that in this framework we assume that the distance between neighbouring voxels is 1 in all directions*/
+	        int x = (int) Math.round(coord[0]); 
+	        int y = (int) Math.round(coord[1]);
+	        int z = (int) Math.round(coord[2]);
+	    
+	        return getVoxel(x, y, z);
+	        
+	    }
 	
 	//Do NOT modify this function
     public Volume(int xd, int yd, int zd) {

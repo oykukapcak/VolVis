@@ -29,8 +29,9 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
 	///////////////// TO BE IMPLEMENTED //////////////////////////////////
 	//////////////////////////////////////////////////////////////////////
 
+	//in this function we update the "image" attribute using the slicing technique
     void slicer(double[] viewMatrix) {
-	    // clear image
+	    // we start by clearing the image
 	    for (int j = 0; j < image.getHeight(); j++) {
 	        for (int i = 0; i < image.getWidth(); i++) {
 	            image.setRGB(i, j, 0);
@@ -46,35 +47,47 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
 	    VectorMath.setVector(uVec, viewMatrix[0], viewMatrix[4], viewMatrix[8]);
 	    VectorMath.setVector(vVec, viewMatrix[1], viewMatrix[5], viewMatrix[9]);
 	
-	    // image is square
+	    //image is a square
 	    int imageCenter = image.getWidth() / 2;
-	
 	    double[] pixelCoord = new double[3];
 	    double[] volumeCenter = new double[3];
 	    VectorMath.setVector(volumeCenter, volume.getDimX() / 2, volume.getDimY() / 2, volume.getDimZ() / 2);
-	
+	   	
 	    // sample on a plane through the origin of the volume data
 	    double max = volume.getMaximum();
 	    TFColor voxelColor = new TFColor();
 	    for (int j = 0; j < image.getHeight(); j++) {
 	        for (int i = 0; i < image.getWidth(); i++) {
-	            pixelCoord[0] = uVec[0] * (i - imageCenter) + vVec[0] * (j - imageCenter)
-	                    + volumeCenter[0];
-	            pixelCoord[1] = uVec[1] * (i - imageCenter) + vVec[1] * (j - imageCenter)
-	                    + volumeCenter[1];
-	            pixelCoord[2] = uVec[2] * (i - imageCenter) + vVec[2] * (j - imageCenter)
-	                    + volumeCenter[2];
+	            pixelCoord[0] = uVec[0] * (i - imageCenter) + vVec[0] * (j - imageCenter) + volumeCenter[0];
+	            pixelCoord[1] = uVec[1] * (i - imageCenter) + vVec[1] * (j - imageCenter) + volumeCenter[1];
+	            pixelCoord[2] = uVec[2] * (i - imageCenter) + vVec[2] * (j - imageCenter) + volumeCenter[2];
 	
-	            int val = getVoxel(pixelCoord);
+	            
+	            //pixelCoord now contains the 3D coordinates of the pixels
+	            //we now have to get the value for the in the 3D volume for the pixel
+	            //we can use a nearest neighbor implementation like this:
+	            int val = volume.getVoxelNN(pixelCoord);
+
+	            		
+	            //you have to implement the function getVoxelInterpolated in Volume.java
+	            //in order to complete the assignment
+	            //int val = volume.getVoxelInterpolate(pixelCoord); //and then use this line
+	            
+	            
 	            // Map the intensity to a grey value by linear scaling
 	            voxelColor.r = val/max;
 	            voxelColor.g = voxelColor.r;
 	            voxelColor.b = voxelColor.r;
-	            voxelColor.a = val > 0 ? 1.0 : 0.0;  // this makes intensity 0 completely transparent and the rest opaque
-	            // Alternatively, apply the transfer function to obtain a color
-	            // voxelColor = tFunc.getColor(val);
 	            
-	            // BufferedImage expects a pixel color packed as ARGB in an int
+	            // the following linke makes intensity 0 completely transparent and the rest opaque
+	            // Alternatively, apply the transfer function to obtain a color using the tFunc attribute
+	            // voxelColor = tFunc.getColor(val);
+	            voxelColor.a = val > 0 ? 1.0 : 0.0;  
+	            
+	            
+	            //BufferedImage expects a pixel color packed as ARGB in an int
+	            //use the function getColorInteger to convert the three colors and alpha in the range 0-255
+	            // to the packed ARGB version
 	            int c_alpha = voxelColor.a <= 1.0 ? (int) Math.floor(voxelColor.a * 255) : 255;
 	            int c_red = voxelColor.r <= 1.0 ? (int) Math.floor(voxelColor.r * 255) : 255;
 	            int c_green = voxelColor.g <= 1.0 ? (int) Math.floor(voxelColor.g * 255) : 255;
