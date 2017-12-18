@@ -29,13 +29,22 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
 	///////////////// TO BE IMPLEMENTED //////////////////////////////////
 	//////////////////////////////////////////////////////////////////////
 
+	int computeImageColor(double r, double g, double b, double a){
+		int c_alpha = 	a <= 1.0 ? (int) Math.floor(a * 255) : 255;
+        int c_red = 	r <= 1.0 ? (int) Math.floor(r * 255) : 255;
+        int c_green = 	g <= 1.0 ? (int) Math.floor(g * 255) : 255;
+        int c_blue = 	b <= 1.0 ? (int) Math.floor(b * 255) : 255;
+        int pixelColor = getColorInteger(c_red,c_green,c_blue,c_alpha);
+        return pixelColor;
+	}
+	
 	//in this function we update the "image" attribute using the slicing technique
     void slicer(double[] viewMatrix) {
 	    // we start by clearing the image
 	    resetImage();
 	
-	    // vector uVec and vVec define a plane through the origin, 
-	    // perpendicular to the view vector viewVec
+	    // vector uVec and vVec define the view plane, 
+	    // perpendicular to the view vector viewVec which is going from the view point towards the object
 	    double[] viewVec = new double[3];
 	    double[] uVec = new double[3];
 	    double[] vVec = new double[3];
@@ -80,15 +89,8 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
 	            
 	            
 	            //BufferedImage expects a pixel color packed as ARGB in an int
-	            //use the function getColorInteger to convert the three colors and alpha in the range 0-255
-	            // to the packed ARGB version
-	            //
-	            // x?y:z is called ternary operator -> have a look https://en.wikipedia.org/wiki/%3F:
-	            int c_alpha = voxelColor.a <= 1.0 ? (int) Math.floor(voxelColor.a * 255) : 255;
-	            int c_red = voxelColor.r <= 1.0 ? (int) Math.floor(voxelColor.r * 255) : 255;
-	            int c_green = voxelColor.g <= 1.0 ? (int) Math.floor(voxelColor.g * 255) : 255;
-	            int c_blue = voxelColor.b <= 1.0 ? (int) Math.floor(voxelColor.b * 255) : 255;
-	            int pixelColor = getColorInteger(c_red,c_green,c_blue,c_alpha);
+	            //use the function computeImageColor to convert your double color in the range 0-1 to the format need by the image
+	            int pixelColor = computeImageColor(voxelColor.r,voxelColor.g,voxelColor.b,voxelColor.a);
 	            image.setRGB(i, j, pixelColor);
 	        }
 	    }
