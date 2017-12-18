@@ -128,14 +128,15 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
         return color;
     }
     
+    //Implementation of a ray tracer given the entry and exit points
+    //can you adapt the code of the MIP in order to compute your own nrSamples?
     int traceRay(double[] entryPoint, double[] exitPoint, double[] viewVec, double sampleStep) {
-        int color;
-
+    	//compute the increment and the number of samples
         double[] increments = new double[3];
         VectorMath.setVector(increments, -viewVec[0] * sampleStep, -viewVec[1] * sampleStep, -viewVec[2] * sampleStep);
-
         int nrSamples = 1 + (int) Math.floor(VectorMath.distance(entryPoint, exitPoint) / sampleStep);
 
+        //the current position is initialized as the entry point
         double[] currentPos = new double[3];
         VectorMath.setVector(currentPos, entryPoint[0], entryPoint[1], entryPoint[2]);
         int accumulator = 0;
@@ -159,11 +160,90 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
             alpha = 0;
         }
         r = g = b = accumulator;
-        color = getColorInteger(r,g,b,alpha);
-
+        int color = getColorInteger(r,g,b,alpha);
         return color;
     }
     
+    
+    
+    int traceRayComposite(double[] entryPoint, double[] exitPoint, double[] viewVec, double sampleStep) {
+        double[] lightVector = new double[3];
+        double[] halfVector = new double[3];
+        //the light vector is directed toward the view point (which is the source of the light)
+        //half vector is used to speed up the phong shading computation
+        getLightVector(lightVector,halfVector,viewVec);
+        
+        //compute increments along the ray for each step
+        double[] increments = new double[3];
+        computeIncrements(increments, viewVec, sampleStep);
+        //compute the number of steps
+        int nrSamples = 1 + (int) Math.floor(VectorMath.distance(entryPoint, exitPoint) / sampleStep);
+
+        //I use a front-to-back composition, therefore the current position is initialized as the exit point
+        double[] currentPos = new double[3];
+        VectorMath.setVector(currentPos, exitPoint[0], exitPoint[1], exitPoint[2]);
+
+        //Initialization of the colors as floating point values
+        double r, g, b;
+        r = g = b = 0.0;
+        double alpha = 0.0;
+        double opacity = 0;
+        
+        TFColor voxel_color = new TFColor();
+        do {
+        	//Gets the value and the gradient in the current position
+            int value = volume.getVoxelNN(currentPos);
+            VoxelGradient gradient = gradients.getGradient(currentPos);
+
+            //Updates the color and the opacity based on the current selection
+            if (compositingMode) {
+                voxel_color = tFunc.getColor(value);
+                opacity = voxel_color.a;    
+            }
+            if (tf2dMode) {
+                voxel_color = tfEditor2D.triangleWidget.color;
+                opacity = tfEditor2D.triangleWidget.color.a;            
+                opacity *= computeLevoyOpacity(tfEditor2D.triangleWidget.baseIntensity, 
+                    tfEditor2D.triangleWidget.radius, value, gradient.mag);
+            }
+            if (shadingMode) {
+                if (opacity > 0.0) {
+                    voxel_color = computePhongShading(voxel_color, gradient, lightVector, halfVector);
+                }
+            }
+            
+            // Compute the composition with the back-to-front algorithm
+            r = opacity * voxel_color.r + (1.0 - opacity) * r;
+            g = opacity * voxel_color.g + (1.0 - opacity) * g;
+            b = opacity * voxel_color.b + (1.0 - opacity) * b;
+            alpha = opacity + (1.0 - opacity) * alpha;
+            
+
+
+            // front-to-back; note: change sign of increments and entry/exit
+           /*
+             r += voxel_color.a * voxel_color.r * (1.0 - alpha);
+             g += voxel_color.a * voxel_color.g * (1.0 - alpha);
+             b += voxel_color.a * voxel_color.b * (1.0 - alpha);
+             alpha += (1.0-alpha)*voxel_color.a;
+             */
+
+            //update the current position
+            for (int i = 0; i < 3; i++) {
+                currentPos[i] += increments[i];
+            }
+            nrSamples--;
+        } while (nrSamples > 0);
+        
+        //computes the color
+        int c_alpha = alpha <= 1.0 ? (int) Math.floor(alpha * 255) : 255;
+        int c_red = r <= 1.0 ? (int) Math.floor(r * 255) : 255;
+        int c_green = g <= 1.0 ? (int) Math.floor(g * 255) : 255;
+        int c_blue = b <= 1.0 ? (int) Math.floor(b * 255) : 255;
+        int color = getColorInteger(c_red,c_green,c_blue,c_alpha);
+
+        return color;
+    }
     
     void raycast(double[] viewMatrix) {
 
@@ -199,8 +279,6 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
             	// compute the entry and exit point of the ray
                 computeEntryAndExit(pixelCoord, viewVec, entryPoint, exitPoint);
                 if ((entryPoint[0] > -1.0) && (exitPoint[0] > -1.0)) {
-                    //System.out.println("Entry: " + entryPoint[0] + " " + entryPoint[1] + " " + entryPoint[2]);
-                    //System.out.println("Exit: " + exitPoint[0] + " " + exitPoint[1] + " " + exitPoint[2]);
                     int val = 0;
                     if (compositingMode || tf2dMode) {
                         val = traceRayComposite(entryPoint, exitPoint, viewVec, sampleStep);
@@ -216,7 +294,6 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
 
             }
         }
-
     }
 		
 	//////////////////////////////////////////////////////////////////////
@@ -241,6 +318,19 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
 	            image.setRGB(i, j, 0);
 	        }
 	    }
+    }
+    void getLightVector(double[] lightVector, double[] halfVector, double[] viewVec){
+    	VectorMath.setVector(lightVector, -viewVec[0], -viewVec[1], -viewVec[2]);
+    	for (int i=0; i<3; i++) {
+            halfVector[i] = -viewVec[i] + lightVector[i];
+        }
+        double l = VectorMath.length(halfVector);
+        for (int i=0; i<3; i++) {
+            halfVector[i] /= l;
+        }
+    }
+    void computeIncrements(double[] increments, double[] viewVec, double sampleStep) {
+    	VectorMath.setVector(increments, viewVec[0] * sampleStep, viewVec[1] * sampleStep, viewVec[2] * sampleStep);
     }
     
     //used by the slicer
@@ -471,90 +561,7 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
         return color;
     }
     
-    int traceRayComposite(double[] entryPoint, double[] exitPoint, double[] viewVec, double sampleStep) {
-        int color;
-
-        double[] lightVector = new double[3];
-        VectorMath.setVector(lightVector, -viewVec[0], -viewVec[1], -viewVec[2]);
-        
-        double[] halfVector = new double[3];
-        for (int i=0; i<3; i++) {
-            halfVector[i] = -viewVec[i] + lightVector[i];
-        }
-        double l = VectorMath.length(halfVector);
-        for (int i=0; i<3; i++) {
-            halfVector[i] /= l;
-        }
-        
-        double[] increments = new double[3];
-        VectorMath.setVector(increments, viewVec[0] * sampleStep, viewVec[1] * sampleStep, viewVec[2] * sampleStep);
-
-        int nrSamples = 1 + (int) Math.floor(VectorMath.distance(entryPoint, exitPoint) / sampleStep);
-
-        double[] currentPos = new double[3];
-        VectorMath.setVector(currentPos, exitPoint[0], exitPoint[1], exitPoint[2]);
-
-        double r, g, b;
-        r = g = b = 0.0;
-        double alpha = 0.0;
-        double max_grad = 0.0;
-        max_grad = gradients.getMaxGradientMagnitude();
-        TFColor voxel_color = new TFColor();
-        double opacity = 0;
-
-        do {
-            int value = volume.getVoxelNN(currentPos);
-
-            if (compositingMode) {
-                voxel_color = tFunc.getColor(value);
-                opacity = voxel_color.a;    
-            }
-            VoxelGradient gradient = gradients.getGradient(currentPos);
-
-            if (tf2dMode) {
-                voxel_color = tfEditor2D.triangleWidget.color;
-                opacity = tfEditor2D.triangleWidget.color.a;            
-                opacity *= computeLevoyOpacity(tfEditor2D.triangleWidget.baseIntensity, 
-                    tfEditor2D.triangleWidget.radius, value, gradient.mag);
-                
-            }
-
-            if (shadingMode) {
-                if (opacity > 0.0) {
-                    voxel_color = computePhongShading(voxel_color, gradient, lightVector, halfVector);
-                }
-            }
-            
-            // back-to-front
-            r = opacity * voxel_color.r + (1.0 - opacity) * r;
-            g = opacity * voxel_color.g + (1.0 - opacity) * g;
-            b = opacity * voxel_color.b + (1.0 - opacity) * b;
-            alpha = opacity + (1.0 - opacity) * alpha;
-            
-
-
-            // front-to-back; note: change sign of increments and entry/exit
-           /*
-             r += voxel_color.a * voxel_color.r * (1.0 - alpha);
-             g += voxel_color.a * voxel_color.g * (1.0 - alpha);
-             b += voxel_color.a * voxel_color.b * (1.0 - alpha);
-             alpha += (1.0-alpha)*voxel_color.a;
-             */
-
-            for (int i = 0; i < 3; i++) {
-                currentPos[i] += increments[i];
-            }
-            nrSamples--;
-        } while (nrSamples > 0);
-        
-        int c_alpha = alpha <= 1.0 ? (int) Math.floor(alpha * 255) : 255;
-        int c_red = r <= 1.0 ? (int) Math.floor(r * 255) : 255;
-        int c_green = g <= 1.0 ? (int) Math.floor(g * 255) : 255;
-        int c_blue = b <= 1.0 ? (int) Math.floor(b * 255) : 255;
-        color = getColorInteger(c_red,c_green,c_blue,c_alpha);
-
-        return color;
-    }
+    
 
     void computeEntryAndExit(double[] p, double[] viewVec, double[] entryPoint, double[] exitPoint) {
 
