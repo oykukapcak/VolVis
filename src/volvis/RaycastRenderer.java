@@ -99,6 +99,40 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
 	        }
 	    }
 	}
+    
+
+    //Implementation of MIP
+    //you should return the color assigned to a ray given it's starting point and the direction.
+    //ray must be sampled "nrSamples" times, with a sample step of sampleStep
+    int traceRayMIP(double[] startPoint, double[] direction, double sampleStep, int nrSamples) {
+
+    	//Temporary vector used for the sampling
+        double[] currentPos = new double[3];
+        VectorMath.setVector(currentPos, startPoint[0], startPoint[1], startPoint[2]);
+        
+        int accumulator = 0;
+        for (int k = 0; k < nrSamples; k++) {
+            currentPos[0] = startPoint[0] + k * sampleStep * direction[0];
+            currentPos[1] = startPoint[1] + k * sampleStep * direction[1];
+            currentPos[2] = startPoint[2] + k * sampleStep * direction[2];
+            
+            int value = volume.getVoxelInterpolate(currentPos);
+            if (value > accumulator) {
+                accumulator = value;
+            }
+        }
+
+        int alpha;
+        int r, g, b;
+        if (accumulator > 0) { // if the maximum = 0 make the voxel transparent
+            alpha = 255;
+        } else {
+            alpha = 0;
+        }
+        r = g = b = accumulator;
+        int color = getColorInteger(r,g,b,alpha);
+        return color;
+    }
 		
 	//////////////////////////////////////////////////////////////////////
 	//////////////////////////////////////////////////////////////////////
@@ -293,39 +327,6 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
         return color;
     }
 
-    // MIP tracer brute force without computing entry and exit points
-    int traceRayMIP(double[] startPoint, double[] viewVec, double sampleStep, int nrSamples) {
-        int color;
-
-        double[] currentPos = new double[3];
-        VectorMath.setVector(currentPos, startPoint[0], startPoint[1], startPoint[2]);
-
-        int accumulator = 0;
-
-        for (int k = 0; k < nrSamples; k++) {
-            currentPos[0] = startPoint[0] + k * sampleStep * viewVec[0]; // + volume.getDimX()/2;
-            currentPos[1] = startPoint[1] + k * sampleStep * viewVec[1]; // + volume.getDimY()/2;
-            currentPos[2] = startPoint[2] + k * sampleStep * viewVec[2]; // + volume.getDimZ()/2;
-            //System.out.println(currentPos[0] + " " + currentPos[1] + " " + currentPos[2]);
-            int value = volume.getVoxelNN(currentPos);
-            if (value > accumulator) {
-                accumulator = value;
-            }
-        }
-
-
-        int alpha;
-        int r, g, b;
-        if (accumulator > 0) { // if the maximum = 0 make the voxel transparent
-            alpha = 255;
-        } else {
-            alpha = 0;
-        }
-        r = g = b = accumulator;
-        color = getColorInteger(r,g,b,alpha);
-
-        return color;
-    }
 
     public double computeLevoyOpacity(double material_value, double material_r,
             double voxelValue, double gradMagnitude) {
