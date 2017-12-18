@@ -66,12 +66,12 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
 	            //pixelCoord now contains the 3D coordinates of the pixels
 	            //we now have to get the value for the in the 3D volume for the pixel
 	            //we can use a nearest neighbor implementation like this:
-	            int val = volume.getVoxelNN(pixelCoord);
+	            //int val = volume.getVoxelNN(pixelCoord);
 
 	            		
 	            //you have to implement the function getVoxelInterpolated in Volume.java
 	            //in order to complete the assignment
-	            //int val = volume.getVoxelInterpolate(pixelCoord); //and then use this line
+	            int val = volume.getVoxelInterpolate(pixelCoord); //and then use this line
 	            
 	            
 	            // Map the intensity to a grey value by linear scaling
@@ -88,6 +88,8 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
 	            //BufferedImage expects a pixel color packed as ARGB in an int
 	            //use the function getColorInteger to convert the three colors and alpha in the range 0-255
 	            // to the packed ARGB version
+	            //
+	            // x?y:z is called ternary operator -> have a look https://en.wikipedia.org/wiki/%3F:
 	            int c_alpha = voxelColor.a <= 1.0 ? (int) Math.floor(voxelColor.a * 255) : 255;
 	            int c_red = voxelColor.r <= 1.0 ? (int) Math.floor(voxelColor.r * 255) : 255;
 	            int c_green = voxelColor.g <= 1.0 ? (int) Math.floor(voxelColor.g * 255) : 255;
@@ -267,7 +269,7 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
             }
         }
     }
-
+/*
     short getVoxel(double[] coord) {
 
         if (coord[0] < 0 || coord[0] >= volume.getDimX() || coord[1] < 0 || coord[1] >= volume.getDimY()
@@ -302,6 +304,7 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
         }
         
     }
+    */
 
     int traceRay(double[] entryPoint, double[] exitPoint, double[] viewVec, double sampleStep) {
         int color;
@@ -316,7 +319,7 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
         int accumulator = 0;
 
         do {
-            int value = getVoxel(currentPos);
+            int value = volume.getVoxelNN(currentPos);
             if (value > accumulator) {
                 accumulator = value;
             }
@@ -353,7 +356,7 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
             currentPos[1] = startPoint[1] + k * sampleStep * viewVec[1]; // + volume.getDimY()/2;
             currentPos[2] = startPoint[2] + k * sampleStep * viewVec[2]; // + volume.getDimZ()/2;
             //System.out.println(currentPos[0] + " " + currentPos[1] + " " + currentPos[2]);
-            int value = getVoxel(currentPos);
+            int value = volume.getVoxelNN(currentPos);
             if (value > accumulator) {
                 accumulator = value;
             }
@@ -466,7 +469,7 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
         double opacity = 0;
 
         do {
-            int value = getVoxel(currentPos);
+            int value = volume.getVoxelNN(currentPos);
 
             if (compositingMode) {
                 voxel_color = tFunc.getColor(value);
@@ -662,7 +665,7 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
                 pixelCoord[2] = uVec[2] * (i - imageCenter) + vVec[2] * (j - imageCenter)
                         + volumeCenter[2];
 
-                int val = getVoxel(pixelCoord);
+                int val = volume.getVoxelNN(pixelCoord);
                 // scale the result to the range 0-255
                 val = (int) Math.floor(255 * val / max);
                 // BufferedImage expects a pixel color packed as ARGB in an int
