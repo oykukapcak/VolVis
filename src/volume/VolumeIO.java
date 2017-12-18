@@ -15,7 +15,7 @@ import java.util.Scanner;
  * @author michel
  */
 public class VolumeIO {
-    
+	//Do NOT modify this function
     public VolumeIO(File file) throws IOException {
         BufferedInputStream stream = null;
         try {
@@ -69,23 +69,23 @@ public class VolumeIO {
             }
         }
     }
-
+	//Do NOT modify this function
     public int getXDim() {
         return x_dim;
     }
-    
+	//Do NOT modify this function
     public int getYDim() {
         return y_dim;
     }
-    
+	//Do NOT modify this function
     public int getZDim() {
         return z_dim;
     }
-
+	//Do NOT modify this function
     public short[] getData() {
         return data;
     }
-    
+	//Do NOT modify this function
     private void parseHeader(String header) {
         
         String[] avs_keys = {"ndim", "dim1", "dim2", "dim3", "nspace", "veclen", 
@@ -168,7 +168,7 @@ public class VolumeIO {
 
         }
     }
-    
+	//Do NOT modify these attributes
     private int x_dim, y_dim, z_dim;
     private short[] data;
     private int data_type;
