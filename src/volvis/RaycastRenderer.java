@@ -29,15 +29,6 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
 	///////////////// TO BE IMPLEMENTED //////////////////////////////////
 	//////////////////////////////////////////////////////////////////////
 
-	int computeImageColor(double r, double g, double b, double a){
-		int c_alpha = 	a <= 1.0 ? (int) Math.floor(a * 255) : 255;
-        int c_red = 	r <= 1.0 ? (int) Math.floor(r * 255) : 255;
-        int c_green = 	g <= 1.0 ? (int) Math.floor(g * 255) : 255;
-        int c_blue = 	b <= 1.0 ? (int) Math.floor(b * 255) : 255;
-        int pixelColor = getColorInteger(c_red,c_green,c_blue,c_alpha);
-        return pixelColor;
-	}
-	
 	//in this function we update the "image" attribute using the slicing technique
     void slicer(double[] viewMatrix) {
 	    // we start by clearing the image
@@ -106,27 +97,27 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
         double[] currentPos = new double[3];
         VectorMath.setVector(currentPos, startPoint[0], startPoint[1], startPoint[2]);
         
-        int accumulator = 0;
+        double accumulator = 0;
         for (int k = 0; k < nrSamples; k++) {
             currentPos[0] = startPoint[0] + k * sampleStep * direction[0];
             currentPos[1] = startPoint[1] + k * sampleStep * direction[1];
             currentPos[2] = startPoint[2] + k * sampleStep * direction[2];
             
-            int value = volume.getVoxelInterpolate(currentPos);
+            double value = volume.getVoxelInterpolate(currentPos)/255.;
             if (value > accumulator) {
                 accumulator = value;
             }
         }
 
-        int alpha;
-        int r, g, b;
-        if (accumulator > 0) { // if the maximum = 0 make the voxel transparent
-            alpha = 255;
+        double alpha;
+        double r, g, b;
+        if (accumulator > 0.0) { // if the maximum = 0 make the voxel transparent
+            alpha = 1.0;
         } else {
-            alpha = 0;
+            alpha = 0.0;
         }
         r = g = b = accumulator;
-        int color = getColorInteger(r,g,b,alpha);
+        int color = computeImageColor(r,g,b,alpha);
         return color;
     }
     
@@ -141,10 +132,10 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
         //the current position is initialized as the entry point
         double[] currentPos = new double[3];
         VectorMath.setVector(currentPos, entryPoint[0], entryPoint[1], entryPoint[2]);
-        int accumulator = 0;
-
+        
+        double accumulator = 0;
         do {
-            int value = volume.getVoxelNN(currentPos);
+            double value = volume.getVoxelInterpolate(currentPos)/255.;
             if (value > accumulator) {
                 accumulator = value;
             }
@@ -154,15 +145,15 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
             nrSamples--;
         } while (nrSamples > 0);
 
-        int alpha;
-        int r, g, b;
-        if (accumulator > 0) { // if the maximum = 0 make the voxel transparent
-            alpha = 255;
+        double alpha;
+        double r, g, b;
+        if (accumulator > 0.0) { // if the maximum = 0 make the voxel transparent
+            alpha = 1.0;
         } else {
-            alpha = 0;
+            alpha = 0.0;
         }
         r = g = b = accumulator;
-        int color = getColorInteger(r,g,b,alpha);
+        int color = computeImageColor(r,g,b,alpha);
         return color;
     }
     
@@ -194,7 +185,7 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
         TFColor voxel_color = new TFColor();
         do {
         	//Gets the value and the gradient in the current position
-            int value = volume.getVoxelNN(currentPos);
+            int value = volume.getVoxelInterpolate(currentPos);
             VoxelGradient gradient = gradients.getGradient(currentPos);
 
             //Updates the color and the opacity based on the current selection
@@ -238,12 +229,7 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
         } while (nrSamples > 0);
         
         //computes the color
-        int c_alpha = alpha <= 1.0 ? (int) Math.floor(alpha * 255) : 255;
-        int c_red = r <= 1.0 ? (int) Math.floor(r * 255) : 255;
-        int c_green = g <= 1.0 ? (int) Math.floor(g * 255) : 255;
-        int c_blue = b <= 1.0 ? (int) Math.floor(b * 255) : 255;
-        int color = getColorInteger(c_red,c_green,c_blue,c_alpha);
-
+        int color = computeImageColor(r,g,b,alpha);
         return color;
     }
     
@@ -313,7 +299,17 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
     private boolean compositingMode = false;
     private boolean tf2dMode = false;
     private boolean shadingMode = false;
-    
+
+    //Do NOT modify this function
+    int computeImageColor(double r, double g, double b, double a){
+		int c_alpha = 	a <= 1.0 ? (int) Math.floor(a * 255) : 255;
+        int c_red = 	r <= 1.0 ? (int) Math.floor(r * 255) : 255;
+        int c_green = 	g <= 1.0 ? (int) Math.floor(g * 255) : 255;
+        int c_blue = 	b <= 1.0 ? (int) Math.floor(b * 255) : 255;
+        int pixelColor = getColorInteger(c_red,c_green,c_blue,c_alpha);
+        return pixelColor;
+	}
+    //Do NOT modify this function    
     public void resetImage(){
     	for (int j = 0; j < image.getHeight(); j++) {
 	        for (int i = 0; i < image.getWidth(); i++) {
@@ -321,6 +317,7 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
 	        }
 	    }
     }
+    //Do NOT modify this function
     void getLightVector(double[] lightVector, double[] halfVector, double[] viewVec){
     	VectorMath.setVector(lightVector, -viewVec[0], -viewVec[1], -viewVec[2]);
     	for (int i=0; i<3; i++) {
@@ -331,11 +328,13 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
             halfVector[i] /= l;
         }
     }
+    //Do NOT modify this function
     void computeIncrements(double[] increments, double[] viewVec, double sampleStep) {
     	VectorMath.setVector(increments, viewVec[0] * sampleStep, viewVec[1] * sampleStep, viewVec[2] * sampleStep);
     }
     
     //used by the slicer
+    //Do NOT modify this function
     void getPlane(double viewVec[], double uVec[], double vVec[]) {
 		VectorMath.setVector(viewVec, viewMatrix[2], viewMatrix[6], viewMatrix[10]);
 	    VectorMath.setVector(uVec, viewMatrix[0], viewMatrix[4], viewMatrix[8]);
@@ -343,17 +342,20 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
 	}
     
     //used by the slicer	
+    //Do NOT modify this function
 	void computeVolumeCenter(double volumeCenter[]) {
 		VectorMath.setVector(volumeCenter, volume.getDimX() / 2, volume.getDimY() / 2, volume.getDimZ() / 2);
 	}
 	
     //used by the slicer
+    //Do NOT modify this function
 	void computePixelCoordinates(double pixelCoord[], double volumeCenter[], double uVec[], double vVec[], int i, int j) {
 		int imageCenter = image.getWidth()/2;
 		pixelCoord[0] = uVec[0] * (i - imageCenter) + vVec[0] * (j - imageCenter) + volumeCenter[0];
         pixelCoord[1] = uVec[1] * (i - imageCenter) + vVec[1] * (j - imageCenter) + volumeCenter[1];
         pixelCoord[2] = uVec[2] * (i - imageCenter) + vVec[2] * (j - imageCenter) + volumeCenter[2];
 	}
+    //Do NOT modify this function
 	void computePixelCoordinatesBehind(double pixelCoord[], double viewVec[], double uVec[], double vVec[], int i, int j) {
 		int imageCenter = image.getWidth()/2;
 		pixelCoord[0] = uVec[0] * (i - imageCenter) + vVec[0] * (j - imageCenter) - viewVec[0] * imageCenter + volume.getDimX() / 2.0;
@@ -361,17 +363,17 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
         pixelCoord[2] = uVec[2] * (i - imageCenter) + vVec[2] * (j - imageCenter) - viewVec[2] * imageCenter + volume.getDimZ() / 2.0;
 	}
 	
-    
+    //Do NOT modify this function
     public int getColorInteger(int c_red, int c_green, int c_blue, int c_alpha) {
     	int pixelColor = (c_alpha << 24) | (c_red << 16) | (c_green << 8) | c_blue;
     	return pixelColor;
     } 
-    
+    //Do NOT modify this function
     public RaycastRenderer() {
         panel = new RaycastRendererPanel(this);
         panel.setSpeedLabel("0");
     }
-
+    //Do NOT modify this function
     public void setVolume(Volume vol) {
         System.out.println("Assigning volume");
         volume = vol;
@@ -397,41 +399,41 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
 
         System.out.println("Finished initialization of RaycastRenderer");
     }
-
+    //Do NOT modify this function
     public RaycastRendererPanel getPanel() {
         return panel;
     }
 
-      
+    //Do NOT modify this function
     public TransferFunction2DEditor getTF2DPanel() {
         return tfEditor2D;
     }
-    
+    //Do NOT modify this function
     public TransferFunctionEditor getTFPanel() {
         return tfEditor;
     }
-     
+    //Do NOT modify this function
     public void setShadingMode(boolean mode) {
         shadingMode = mode;
         changed();
     }
-    
+    //Do NOT modify this function
     public void setMIPMode() {
         setMode(false, true, false, false);
     }
-    
+    //Do NOT modify this function
     public void setSlicerMode() {
         setMode(true, false, false, false);
     }
-    
+    //Do NOT modify this function
     public void setCompositingMode() {
         setMode(false, false, true, false);
     }
-    
+    //Do NOT modify this function
     public void setTF2DMode() {
         setMode(false, false, false, true);
     }
-    
+    //Do NOT modify this function
     private void setMode(boolean slicer, boolean mip, boolean composite, boolean tf2d) {
         slicerMode = slicer;
         mipMode = mip;
@@ -439,7 +441,7 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
         tf2dMode = tf2d;        
         changed();
     }
-    
+    //Do NOT modify this function
     private boolean intersectLinePlane(double[] plane_pos, double[] plane_normal,
             double[] line_pos, double[] line_dir, double[] intersection) {
 
@@ -462,7 +464,7 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
 
         return true;
     }
-
+    //Do NOT modify this function
     private boolean validIntersection(double[] intersection, double xb, double xe, double yb,
             double ye, double zb, double ze) {
 
@@ -471,7 +473,7 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
                 && ((zb - 0.5) <= intersection[2]) && (intersection[2] <= (ze + 0.5)));
 
     }
-
+    //Do NOT modify this function
     private void intersectFace(double[] plane_pos, double[] plane_normal,
             double[] line_pos, double[] line_dir, double[] intersection,
             double[] entryPoint, double[] exitPoint) {
@@ -501,7 +503,7 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
             }
         }
     }
-
+    //Do NOT modify this function
     public double computeLevoyOpacity(double material_value, double material_r,
             double voxelValue, double gradMagnitude) {
 
@@ -517,7 +519,7 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
 
         return opacity;
     }
-
+    //Do NOT modify this function
     public double computeLevoy(int f_l, int f_h, double voxelValue, double gradMagnitude) {
         double opacity = 0.0;
         
@@ -529,7 +531,7 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
         
         return opacity;
     }
-
+    //Do NOT modify this function
     private TFColor computePhongShading(TFColor voxel_color, VoxelGradient gradient, double[] lightVector,
             double[] halfVector) {
 
@@ -564,7 +566,7 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
     }
     
     
-
+    //Do NOT modify this function
     void computeEntryAndExit(double[] p, double[] viewVec, double[] entryPoint, double[] exitPoint) {
 
         for (int i = 0; i < 3; i++) {
@@ -602,71 +604,7 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
 
     }
 
-   
-
-
-        
-    void slicer2(double[] viewMatrix) {
-
-        // clear image
-        for (int j = 0; j < image.getHeight(); j++) {
-            for (int i = 0; i < image.getWidth(); i++) {
-                image.setRGB(i, j, 0);
-            }
-        }
-
-        // vector uVec and vVec define a plane through the origin, 
-        // perpendicular to the 'view vector' viewVec
-        // the 'view up' vector is vVec
-        double[] viewVec = new double[3];
-        double[] uVec = new double[3];
-        double[] vVec = new double[3];
-        VectorMath.setVector(viewVec, viewMatrix[2], viewMatrix[6], viewMatrix[10]);
-        VectorMath.setVector(uVec, viewMatrix[0], viewMatrix[4], viewMatrix[8]);
-        VectorMath.setVector(vVec, viewMatrix[1], viewMatrix[5], viewMatrix[9]);
-
-        // image is square
-        int imageCenter = image.getWidth() / 2;
-
-        double[] pixelCoord = new double[3];
-        double[] volumeCenter = new double[3];
-        VectorMath.setVector(volumeCenter, volume.getDimX() / 2, volume.getDimY() / 2, volume.getDimZ() / 2);
-
-        // sample on a plane through the origin of the volume data
-        double max = volume.getMaximum();
-        for (int j = 0; j < image.getHeight(); j++) {
-            for (int i = 0; i < image.getWidth(); i++) {
-                pixelCoord[0] = uVec[0] * (i - imageCenter) + vVec[0] * (j - imageCenter)
-                        + volumeCenter[0];
-                pixelCoord[1] = uVec[1] * (i - imageCenter) + vVec[1] * (j - imageCenter)
-                        + volumeCenter[1];
-                pixelCoord[2] = uVec[2] * (i - imageCenter) + vVec[2] * (j - imageCenter)
-                        + volumeCenter[2];
-
-                int val = volume.getVoxelNN(pixelCoord);
-                // scale the result to the range 0-255
-                val = (int) Math.floor(255 * val / max);
-                // BufferedImage expects a pixel color packed as ARGB in an int
-                int alpha;
-                int r, g, b;
-                if (val > 0) {
-                    // set pixel opaque
-                    alpha = 255;
-                } else {
-                    // set pixel transparent
-                    alpha = 0;
-                }
-                r = g = b = val;
-                // pack color channels into int
-                val = getColorInteger(r,g,b,alpha);
-
-                image.setRGB(i, j, val);
-            }
-        }
-
-
-    }
-
+    //Do NOT modify this function
     private void drawBoundingBox(GL2 gl) {
         gl.glPushAttrib(GL2.GL_CURRENT_BIT);
         gl.glDisable(GL2.GL_LIGHTING);
@@ -725,7 +663,7 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
         gl.glPopAttrib();
 
     }
-
+    //Do NOT modify this function
     @Override
     public void visualize(GL2 gl) {
 
@@ -787,7 +725,7 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
     }
     private BufferedImage image;
     private double[] viewMatrix = new double[4 * 4];
-
+    //Do NOT modify this function
     @Override
     public void changed() {
         for (int i=0; i < listeners.size(); i++) {
