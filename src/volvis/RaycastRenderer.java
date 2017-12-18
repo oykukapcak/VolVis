@@ -235,19 +235,6 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
                 intersection);
         if (intersect) {
 
-            /*
-             double xpos0 = -volume.getDimX() / 2.0;
-             double xpos1 = volume.getDimX() / 2.0;
-             double ypos0 = -volume.getDimY() / 2.0;
-             double ypos1 = volume.getDimY() / 2.0;
-             double zpos0 = -volume.getDimZ() / 2.0;
-             double zpos1 = volume.getDimZ() / 2.0;
-             */
-
-            //System.out.println("Plane pos: " + plane_pos[0] + " " + plane_pos[1] + " " + plane_pos[2]);
-            //System.out.println("Intersection: " + intersection[0] + " " + intersection[1] + " " + intersection[2]);
-            //System.out.println("line_dir * intersection: " + VectorMath.dotproduct(line_dir, plane_normal));
-
             double xpos0 = 0;
             double xpos1 = volume.getDimX();
             double ypos0 = 0;
@@ -269,42 +256,6 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
             }
         }
     }
-/*
-    short getVoxel(double[] coord) {
-
-        if (coord[0] < 0 || coord[0] >= volume.getDimX() || coord[1] < 0 || coord[1] >= volume.getDimY()
-                || coord[2] < 0 || coord[2] >= volume.getDimZ()) {
-            return 0;
-        }
-
-        int x = (int) Math.floor(coord[0]);
-        int y = (int) Math.floor(coord[1]);
-        int z = (int) Math.floor(coord[2]);
-        
-
-        if ((x >= 0) && ((x + 1) < volume.getDimX()) && (y >= 0) && ((y + 1) < volume.getDimY())
-                && (z >= 0) && ((z + 1) < volume.getDimZ())) {
-            double fac_x = coord[0] - x;
-            double fac_y = coord[1] - y;
-            double fac_z = coord[2] - z;
-
-            double t0 = (1.0 - fac_x) * volume.getVoxel(x, y, z) + fac_x * volume.getVoxel(x + 1, y, z);
-            double t1 = (1.0 - fac_x) * volume.getVoxel(x, y + 1, z) + fac_x * volume.getVoxel(x + 1, y + 1, z);
-            double t2 = (1.0 - fac_x) * volume.getVoxel(x, y, z + 1) + fac_x * volume.getVoxel(x + 1, y, z + 1);
-            double t3 = (1.0 - fac_x) * volume.getVoxel(x, y + 1, z + 1) + fac_x * volume.getVoxel(x + 1, y + 1, z + 1);
-
-            double t4 = (1.0 - fac_y) * t0 + fac_y * t1;
-            double t5 = (1.0 - fac_y) * t2 + fac_y * t3;
-
-            short t6 = (short) Math.floor((1.0 - fac_z) * t4 + fac_z * t5);
-
-            return t6;
-        } else {
-            return 0;
-        }
-        
-    }
-    */
 
     int traceRay(double[] entryPoint, double[] exitPoint, double[] viewVec, double sampleStep) {
         int color;
