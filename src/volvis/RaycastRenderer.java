@@ -63,9 +63,9 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
 	            int val = volume.getVoxelNN(pixelCoord);
 
 	            		
-	            //you have to implement the function getVoxelInterpolated in Volume.java
+	            //you have to implement the function getVoxelLinearInterpolated in Volume.java
 	            //in order to complete the assignment
-	            //int val = volume.getVoxelInterpolate(pixelCoord); //and then use this line
+	            //int val = volume.getVoxelLinearInterpolate(pixelCoord); //and then use this line
 	            
 	            
 	            // Map the intensity to a grey value by linear scaling
@@ -103,7 +103,7 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
             currentPos[1] = startPoint[1] + k * sampleStep * direction[1];
             currentPos[2] = startPoint[2] + k * sampleStep * direction[2];
             
-            double value = volume.getVoxelInterpolate(currentPos)/255.;
+            double value = volume.getVoxelLinearInterpolate(currentPos)/255.;
             if (value > accumulator) {
                 accumulator = value;
             }
@@ -137,7 +137,7 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
         
         double accumulator = 0;
         do {
-            double value = volume.getVoxelInterpolate(currentPos)/255.;
+            double value = volume.getVoxelLinearInterpolate(currentPos)/255.;
             if (value > accumulator) {
                 accumulator = value;
             }
@@ -188,7 +188,7 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
         TFColor colorAux = new TFColor();
         do {
         	//Gets the value and the gradient in the current position
-            int value = volume.getVoxelInterpolate(currentPos);
+            int value = volume.getVoxelLinearInterpolate(currentPos);
             VoxelGradient gradient = gradients.getGradient(currentPos);
 
             //Updates the color and the opacity based on the current selection
@@ -404,6 +404,8 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
             imageSize = imageSize + 1;
         }
         image = new BufferedImage(imageSize, imageSize, BufferedImage.TYPE_INT_ARGB);
+       
+        // Initialize transferfunction 
         tFunc = new TransferFunction(volume.getMinimum(), volume.getMaximum());
         tFunc.setTestFunc();
         tFunc.addTFChangeListener(this);
@@ -687,8 +689,8 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
         if (volume == null) {
             return;
         }
-
-        drawBoundingBox(gl);
+        	
+         drawBoundingBox(gl);
 
         gl.glGetDoublev(GL2.GL_MODELVIEW_MATRIX, viewMatrix, 0);
 

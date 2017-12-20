@@ -20,13 +20,13 @@ public class Volume {
 	//This function linearly interpolates the value g0 and g1 given the factor (t) 
     //the result is returned. You can use it to tri-linearly interpolate the values 
 	private float interpolate(float g0, float g1, float factor) {
-        float result = (1.0f - factor)*g0 + factor*g1;
+        float result = (1 - factor)*g0 + factor*g1;
         return result; 
     }
 	
 	//You have to implement the trilinear interpolation of the volume
-	//First implement the interpolated funzion above
-	public short getVoxelInterpolate(double[] coord) {
+	//First implement the interpolated function above
+	public short getVoxelLinearInterpolate(double[] coord) {
         if (coord[0] < 0 || coord[0] > (dimX-2) || coord[1] < 0 || coord[1] > (dimY-2)
                 || coord[2] < 0 || coord[2] > (dimZ-2)) {
             return 0;
