@@ -39,7 +39,7 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
 	    double[] viewVec = new double[3];
 	    double[] uVec = new double[3];
 	    double[] vVec = new double[3];
-	    getPlane(viewVec,uVec,vVec);
+	    getViewPlaneVectors(viewMatrix,viewVec,uVec,vVec);
 	  
 	    // compute the volume center
 	    double[] volumeCenter = new double[3];
@@ -57,7 +57,7 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
 	        	//pixelCoord now contains the 3D coordinates for pixel (i,j)
 	        	computePixelCoordinates(pixelCoord,volumeCenter,uVec,vVec,i,j);
 		            
-	            //pixelCoord now contains the 3D coordinates of the pixels
+	            //pixelCoord now contains the 3D coordinates of the pixels (i,j)
 	            //we now have to get the value for the in the 3D volume for the pixel
 	            //we can use a nearest neighbor implementation like this:
 	            int val = volume.getVoxelNN(pixelCoord);
@@ -73,11 +73,11 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
 	            voxelColor.g = voxelColor.r;
 	            voxelColor.b = voxelColor.r;
 	            
-	            // the following linke makes intensity 0 completely transparent and the rest opaque
+	            // the following instruction makes intensity 0 completely transparent and the rest opaque
+	               voxelColor.a = val > 0 ? 1.0 : 0.0;   
 	            // Alternatively, apply the transfer function to obtain a color using the tFunc attribute
 	            // voxelColor = tFunc.getColor(val);
-	            voxelColor.a = val > 0 ? 1.0 : 0.0;  
-	            
+	         
 	            
 	            //BufferedImage expects a pixel color packed as ARGB in an int
 	            //use the function computeImageColor to convert your double color in the range 0-1 to the format need by the image
@@ -89,11 +89,11 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
     
 
     //Implementation of MIP
-    //you should return the color assigned to a ray given it's starting point and the direction.
-    //ray must be sampled "nrSamples" times, with a sample step of sampleStep
+    //you should return the color assigned to a ray/pixel given it's starting point and the direction of the ray.
+    //ray must be sampled "nrSamples" times, with a sample step distance of sampleStep
     int traceRayMIP(double[] startPoint, double[] direction, double sampleStep, int nrSamples) {
 
-    	//Temporary vector used for the sampling
+    	//Temporary sample position 
         double[] currentPos = new double[3];
         VectorMath.setVector(currentPos, startPoint[0], startPoint[1], startPoint[2]);
         
@@ -123,10 +123,12 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
     
     //Implementation of a ray tracer given the entry and exit points
     //can you adapt the code of the MIP in order to compute your own nrSamples?
-    int traceRay(double[] entryPoint, double[] exitPoint, double[] viewVec, double sampleStep) {
+    int traceRay(double[] entryPoint, double[] exitPoint, double[] rayVector, double sampleStep) {
     	//compute the increment and the number of samples
         double[] increments = new double[3];
-        VectorMath.setVector(increments, -viewVec[0] * sampleStep, -viewVec[1] * sampleStep, -viewVec[2] * sampleStep);
+        VectorMath.setVector(increments, rayVector[0] * sampleStep, rayVector[1] * sampleStep, rayVector[2] * sampleStep);
+        
+        double distance = VectorMath.distance(entryPoint, exitPoint);
         int nrSamples = 1 + (int) Math.floor(VectorMath.distance(entryPoint, exitPoint) / sampleStep);
 
         //the current position is initialized as the entry point
@@ -159,20 +161,20 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
     
     
     
-    int traceRayComposite(double[] entryPoint, double[] exitPoint, double[] viewVec, double sampleStep) {
+    int traceRayComposite(double[] entryPoint, double[] exitPoint, double[] rayVector, double sampleStep) {
         double[] lightVector = new double[3];
         double[] halfVector = new double[3];
         //the light vector is directed toward the view point (which is the source of the light)
         //half vector is used to speed up the phong shading computation
-        getLightVector(lightVector,halfVector,viewVec);
+        getLightVector(lightVector,halfVector,rayVector);
         
-        //compute increments along the ray for each step
+        //compute increments along the ray for each step in a back to front fashion
         double[] increments = new double[3];
-        computeIncrements(increments, viewVec, sampleStep);
+        computeIncrementsB2F(increments, rayVector, sampleStep);
         //compute the number of steps
         int nrSamples = 1 + (int) Math.floor(VectorMath.distance(entryPoint, exitPoint) / sampleStep);
 
-        //I use a front-to-back composition, therefore the current position is initialized as the exit point
+        //I use a back-to-front composition, therefore the current position is initialized as the exit point
         double[] currentPos = new double[3];
         VectorMath.setVector(currentPos, exitPoint[0], exitPoint[1], exitPoint[2]);
 
@@ -183,6 +185,7 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
         double opacity = 0;
         
         TFColor voxel_color = new TFColor();
+        TFColor colorAux = new TFColor();
         do {
         	//Gets the value and the gradient in the current position
             int value = volume.getVoxelInterpolate(currentPos);
@@ -190,18 +193,21 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
 
             //Updates the color and the opacity based on the current selection
             if (compositingMode) {
-                voxel_color = tFunc.getColor(value);
+                colorAux = tFunc.getColor(value);
+                voxel_color.r =colorAux.r;voxel_color.g =colorAux.g;voxel_color.b =colorAux.b;voxel_color.a =colorAux.a;
                 opacity = voxel_color.a;    
             }
             if (tf2dMode) {
-                voxel_color = tfEditor2D.triangleWidget.color;
+                colorAux = tfEditor2D.triangleWidget.color;
+                voxel_color.r =colorAux.r;voxel_color.g =colorAux.g;voxel_color.b =colorAux.b;voxel_color.a =colorAux.a;
                 opacity = tfEditor2D.triangleWidget.color.a;            
                 opacity *= computeLevoyOpacity(tfEditor2D.triangleWidget.baseIntensity, 
                     tfEditor2D.triangleWidget.radius, value, gradient.mag);
             }
             if (shadingMode) {
                 if (opacity > 0.0) {
-                    voxel_color = computePhongShading(voxel_color, gradient, lightVector, halfVector);
+                    colorAux= computePhongShading(voxel_color, gradient, lightVector, halfVector);
+                    voxel_color.r =colorAux.r;voxel_color.g =colorAux.g;voxel_color.b =colorAux.b;voxel_color.a =colorAux.a;
                 }
             }
             
@@ -256,22 +262,26 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
         
         // reset the image to black
         resetImage();
-        // compute the view plane and the view vector that is used to compute the entry and exit point of the ray
-        getPlane(viewVec,uVec,vVec);
-
+        // compute the view plane and the view vector that is used to compute the entry and exit point of the ray the viewVector is pointing towards the camera
+        getViewPlaneVectors(viewMatrix,viewVec,uVec,vVec);
+        
+        //The ray is pointing towards the scene
+        double[] rayVector = new double[3];
+        rayVector[0]=-viewVec[0];rayVector[1]=-viewVec[1];rayVector[2]=-viewVec[2];
+        
         // ray computation for each pixel
         for (int j = 0; j < image.getHeight(); j += increment) {
             for (int i = 0; i < image.getWidth(); i += increment) {
                 // compute starting points of rays in a plane shifted backwards to a position behind the data set
             	computePixelCoordinatesBehind(pixelCoord,viewVec,uVec,vVec,i,j);
             	// compute the entry and exit point of the ray
-                computeEntryAndExit(pixelCoord, viewVec, entryPoint, exitPoint);
+                computeEntryAndExit(pixelCoord, rayVector, entryPoint, exitPoint);
                 if ((entryPoint[0] > -1.0) && (exitPoint[0] > -1.0)) {
                     int val = 0;
                     if (compositingMode || tf2dMode) {
-                        val = traceRayComposite(entryPoint, exitPoint, viewVec, sampleStep);
+                        val = traceRayComposite(entryPoint, exitPoint, rayVector, sampleStep);
                     } else if (mipMode) {
-                        val = traceRay(entryPoint, exitPoint, viewVec, sampleStep);
+                        val = traceRay(entryPoint, exitPoint, rayVector, sampleStep);
                     }
                     for (int ii = i; ii < i + increment; ii++) {
                         for (int jj = j; jj < j + increment; jj++) {
@@ -319,9 +329,9 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
     }
     //Do NOT modify this function
     void getLightVector(double[] lightVector, double[] halfVector, double[] viewVec){
-    	VectorMath.setVector(lightVector, -viewVec[0], -viewVec[1], -viewVec[2]);
+    	VectorMath.setVector(lightVector, viewVec[0], viewVec[1], viewVec[2]);
     	for (int i=0; i<3; i++) {
-            halfVector[i] = -viewVec[i] + lightVector[i];
+            halfVector[i] = viewVec[i] + lightVector[i];
         }
         double l = VectorMath.length(halfVector);
         for (int i=0; i<3; i++) {
@@ -329,14 +339,15 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
         }
     }
     //Do NOT modify this function
-    void computeIncrements(double[] increments, double[] viewVec, double sampleStep) {
-    	VectorMath.setVector(increments, viewVec[0] * sampleStep, viewVec[1] * sampleStep, viewVec[2] * sampleStep);
+    void computeIncrementsB2F(double[] increments, double[] rayVector, double sampleStep) {
+        // we compute a back to front compositing so we start increments in the oposite direction than the pixel ray
+    	VectorMath.setVector(increments, -rayVector[0] * sampleStep, -rayVector[1] * sampleStep, -rayVector[2] * sampleStep);
     }
     
     //used by the slicer
     //Do NOT modify this function
-    void getPlane(double viewVec[], double uVec[], double vVec[]) {
-		VectorMath.setVector(viewVec, viewMatrix[2], viewMatrix[6], viewMatrix[10]);
+    void getViewPlaneVectors(double[] viewMatrix, double viewVec[], double uVec[], double vVec[]) {
+            VectorMath.setVector(viewVec, viewMatrix[2], viewMatrix[6], viewMatrix[10]);
 	    VectorMath.setVector(uVec, viewMatrix[0], viewMatrix[4], viewMatrix[8]);
 	    VectorMath.setVector(vVec, viewMatrix[1], viewMatrix[5], viewMatrix[9]);
 	}
@@ -350,17 +361,21 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
     //used by the slicer
     //Do NOT modify this function
 	void computePixelCoordinates(double pixelCoord[], double volumeCenter[], double uVec[], double vVec[], int i, int j) {
+            // Coordinates of a plane centered at the center of the volume (volumeCenter and oriented according to the plane defined by uVec and vVec
 		int imageCenter = image.getWidth()/2;
 		pixelCoord[0] = uVec[0] * (i - imageCenter) + vVec[0] * (j - imageCenter) + volumeCenter[0];
-        pixelCoord[1] = uVec[1] * (i - imageCenter) + vVec[1] * (j - imageCenter) + volumeCenter[1];
-        pixelCoord[2] = uVec[2] * (i - imageCenter) + vVec[2] * (j - imageCenter) + volumeCenter[2];
+                pixelCoord[1] = uVec[1] * (i - imageCenter) + vVec[1] * (j - imageCenter) + volumeCenter[1];
+                pixelCoord[2] = uVec[2] * (i - imageCenter) + vVec[2] * (j - imageCenter) + volumeCenter[2];
 	}
     //Do NOT modify this function
 	void computePixelCoordinatesBehind(double pixelCoord[], double viewVec[], double uVec[], double vVec[], int i, int j) {
 		int imageCenter = image.getWidth()/2;
-		pixelCoord[0] = uVec[0] * (i - imageCenter) + vVec[0] * (j - imageCenter) - viewVec[0] * imageCenter + volume.getDimX() / 2.0;
-        pixelCoord[1] = uVec[1] * (i - imageCenter) + vVec[1] * (j - imageCenter) - viewVec[1] * imageCenter + volume.getDimY() / 2.0;
-        pixelCoord[2] = uVec[2] * (i - imageCenter) + vVec[2] * (j - imageCenter) - viewVec[2] * imageCenter + volume.getDimZ() / 2.0;
+                // Pixel coordinate is calculate having the center (0,0) of the view plane aligned with the center of the volume and moved a distance equivalent
+                // to the diaganal to make sure I am far away enough.
+                double diagonal = Math.sqrt((volume.getDimX()*volume.getDimX())+(volume.getDimY()*volume.getDimY())+ (volume.getDimZ()*volume.getDimZ()))/2;               
+		pixelCoord[0] = uVec[0] * (i - imageCenter) + vVec[0] * (j - imageCenter) + viewVec[0] * diagonal + volume.getDimX() / 2.0;
+                pixelCoord[1] = uVec[1] * (i - imageCenter) + vVec[1] * (j - imageCenter) + viewVec[1] * diagonal + volume.getDimY() / 2.0;
+                pixelCoord[2] = uVec[2] * (i - imageCenter) + vVec[2] * (j - imageCenter) + viewVec[2] * diagonal + volume.getDimZ() / 2.0;
 	}
 	
     //Do NOT modify this function
@@ -491,7 +506,7 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
 
             if (validIntersection(intersection, xpos0, xpos1, ypos0, ypos1,
                     zpos0, zpos1)) {
-                if (VectorMath.dotproduct(line_dir, plane_normal) > 0) {
+                if (VectorMath.dotproduct(line_dir, plane_normal) < 0) {
                     entryPoint[0] = intersection[0];
                     entryPoint[1] = intersection[1];
                     entryPoint[2] = intersection[2];
@@ -667,7 +682,8 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
     @Override
     public void visualize(GL2 gl) {
 
-
+        double[] viewMatrix = new double[4 * 4];
+        
         if (volume == null) {
             return;
         }
@@ -724,7 +740,7 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
 
     }
     private BufferedImage image;
-    private double[] viewMatrix = new double[4 * 4];
+
     //Do NOT modify this function
     @Override
     public void changed() {
