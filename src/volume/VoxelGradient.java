@@ -8,6 +8,10 @@ package volume;
  *
  * @author michel
  */
+
+// You do not need to change this class.
+// This class represents the elements of the gradient volume.
+
 public class VoxelGradient {
 
     public float x, y, z;

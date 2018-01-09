@@ -14,17 +14,20 @@ import volume.GradientVolume;
 import volume.Volume;
 import volume.VoxelGradient;
 import volvis.TFColor;
+import volvis.TransferFunction2D;
 
 /**
  *
  * @author michel
+ *   Modified by Anna Vilanova
  */
 public class TransferFunction2DEditor extends javax.swing.JPanel {
 
     private Volume vol;
     private GradientVolume gradvol;
+    public TransferFunction2D tf2D;
     private TransferFunction2DView tfView;
-    public TriangleWidget triangleWidget;
+    //public TriangleWidget triangleWidget;
     public int xbins, ybins;
     public double[] histogram;
     private short maxIntensity;
@@ -32,7 +35,7 @@ public class TransferFunction2DEditor extends javax.swing.JPanel {
     private ArrayList<TFChangeListener> listeners = new ArrayList<TFChangeListener>();
 
     
-    public TransferFunction2DEditor(Volume volume, GradientVolume gradientvolume) {
+    public TransferFunction2DEditor(TransferFunction2D tf2D, Volume volume, GradientVolume gradientvolume) {
         initComponents();
 
         this.vol = volume;
@@ -47,7 +50,10 @@ public class TransferFunction2DEditor extends javax.swing.JPanel {
         labelMinVal.setText("0");
         labelMaxVal.setText(Integer.toString(maxIntensity));
 
-        triangleWidget = new TriangleWidget((short) (maxIntensity / 2), 0.2);
+       // triangleWidget = new TriangleWidget((short) (maxIntensity / 2), 0.2);
+        this.tf2D = tf2D;
+        tf2D.SetBaseRadius((short) (maxIntensity / 2), 0.2);
+        
         setSelectedInfo();
     }
 
@@ -84,10 +90,14 @@ public class TransferFunction2DEditor extends javax.swing.JPanel {
     }
 
     public void setSelectedInfo() {
-        intensityLabel.setText(Integer.toString(triangleWidget.baseIntensity));
+       /* intensityLabel.setText(Integer.toString(triangleWidget.baseIntensity));
         radiusLabel.setText(String.format("%.3f", triangleWidget.radius));
         opacityLabel.setText(String.format("%.1f", triangleWidget.color.a));
-        colorButton.setBackground(new Color((float) triangleWidget.color.r, (float) triangleWidget.color.g, (float) triangleWidget.color.b));
+        colorButton.setBackground(new Color((float) triangleWidget.color.r, (float) triangleWidget.color.g, (float) triangleWidget.color.b));*/
+        intensityLabel.setText(Integer.toString(tf2D.baseIntensity));
+        radiusLabel.setText(String.format("%.3f", tf2D.radius));
+        opacityLabel.setText(String.format("%.1f", tf2D.color.a));
+        colorButton.setBackground(new Color((float) tf2D.color.r, (float) tf2D.color.g, (float) tf2D.color.b));
     }
 
     /**
@@ -257,19 +267,20 @@ public class TransferFunction2DEditor extends javax.swing.JPanel {
     }// </editor-fold>//GEN-END:initComponents
 
     private void colorButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_colorButtonActionPerformed
-        // TODO add your handling code here:
+        // Change the color in the transfer function.
         Color newColor = JColorChooser.showDialog(this, "Choose color", colorButton.getBackground());
         if (newColor != null) {
             colorButton.setBackground(newColor);
-            triangleWidget.color.r = newColor.getRed() / 255.0;
-            triangleWidget.color.g = newColor.getGreen() / 255.0;
-            triangleWidget.color.b = newColor.getBlue() / 255.0;
+            tf2D.color.r = newColor.getRed() / 255.0;
+            tf2D.color.g = newColor.getGreen() / 255.0;
+            tf2D.color.b = newColor.getBlue() / 255.0;
+            
             changed();
         }
     }//GEN-LAST:event_colorButtonActionPerformed
 
     private void opacityLabelActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_opacityLabelActionPerformed
-        try {
+       try {
             double value = Double.parseDouble(opacityLabel.getText());
             if (value < 0) {
                 value = 0;
@@ -277,15 +288,15 @@ public class TransferFunction2DEditor extends javax.swing.JPanel {
             if (value > 1.0) {
                 value = 1.0;
             }
-            triangleWidget.color.a = value;
+            tf2D.color.a = value;
         } catch (NumberFormatException e) {
-            triangleWidget.color.a = 0.2;
+            tf2D.color.a = 0.2;
         }
         setSelectedInfo();
         changed();
     }//GEN-LAST:event_opacityLabelActionPerformed
 
-    public class TriangleWidget {
+/*    public class TriangleWidget {
 
         public short baseIntensity;
         public double radius;
@@ -298,7 +309,7 @@ public class TransferFunction2DEditor extends javax.swing.JPanel {
             this.color = new TFColor(0.0, 204.0/255.0, 153.0/255.0, 0.3);
         }
     }
-
+*/
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JButton colorButton;
     private javax.swing.JTextField intensityLabel;

@@ -10,6 +10,7 @@ import java.io.IOException;
 /**
  *
  * @author michel
+ *  Modified by Anna Vilanova
  */
 public class Volume {
     
@@ -17,15 +18,18 @@ public class Volume {
 	///////////////// TO BE IMPLEMENTED //////////////////////////////////
 	//////////////////////////////////////////////////////////////////////
 	
-	//This function linearly interpolates the value g0 and g1 given the factor (t) 
+    //This function linearly interpolates the value g0 and g1 given the factor (t) 
     //the result is returned. You can use it to tri-linearly interpolate the values 
 	private float interpolate(float g0, float g1, float factor) {
-        float result = (1 - factor)*g0 + factor*g1;
+        float result=0;
+        // to be implemented
         return result; 
     }
 	
 	//You have to implement the trilinear interpolation of the volume
 	//First implement the interpolated function above
+        // At the moment the function does takes just the lowest voxel value
+        // to trilinear interpolation
 	public short getVoxelLinearInterpolate(double[] coord) {
         if (coord[0] < 0 || coord[0] > (dimX-2) || coord[1] < 0 || coord[1] > (dimY-2)
                 || coord[2] < 0 || coord[2] > (dimZ-2)) {
@@ -36,19 +40,9 @@ public class Volume {
         int y = (int) Math.floor(coord[1]);
         int z = (int) Math.floor(coord[2]);
         
-        float fac_x = (float) coord[0] - x;
-        float fac_y = (float) coord[1] - y;
-        float fac_z = (float) coord[2] - z;
-
-        float t0 = interpolate(getVoxel(x, y, z), getVoxel(x+1, y, z), fac_x);
-        float t1 = interpolate(getVoxel(x, y+1, z), getVoxel(x+1, y+1, z), fac_x);
-        float t2 = interpolate(getVoxel(x, y, z+1), getVoxel(x+1, y, z+1), fac_x);
-        float t3 = interpolate(getVoxel(x, y+1, z+1), getVoxel(x+1, y+1, z+1), fac_x);
-        float t4 = interpolate(t0, t1, fac_y);
-        float t5 = interpolate(t2, t3, fac_y);
-        float t6 = interpolate(t4, t5, fac_z);
-        
-        return (short)t6; 
+        // To be implemented
+            
+        return getVoxel(x,y,z); 
     }
 		
 	//////////////////////////////////////////////////////////////////////
@@ -56,6 +50,7 @@ public class Volume {
 	//////////////////////////////////////////////////////////////////////
 
 	//Do NOT modify this function
+        // This function is an example and does a nearest neighbour interpolation
 	public short getVoxelNN(double[] coord) {
         if (coord[0] < 0 || coord[0] > (dimX-1) || coord[1] < 0 || coord[1] > (dimY-1)
                 || coord[2] < 0 || coord[2] > (dimZ-1)) {

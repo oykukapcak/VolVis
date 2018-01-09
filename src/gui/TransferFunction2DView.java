@@ -15,10 +15,12 @@ import java.awt.event.MouseEvent;
 import java.awt.event.MouseMotionAdapter;
 import java.awt.geom.Ellipse2D;
 import java.awt.geom.Rectangle2D;
+import volvis.TransferFunction2D;
 
 /**
  *
  * @author michel
+ *  Modified by Anna Vilanova
  */
 public class TransferFunction2DView extends javax.swing.JPanel {
 
@@ -73,13 +75,13 @@ public class TransferFunction2DView extends javax.swing.JPanel {
         }
         
         int ypos = h;
-        int xpos = (int) (ed.triangleWidget.baseIntensity * binWidth);
+        int xpos = (int) (ed.tf2D.baseIntensity * binWidth);
         g2.setColor(Color.black);
         baseControlPoint = new Ellipse2D.Double(xpos - DOTSIZE / 2, ypos - DOTSIZE, DOTSIZE, DOTSIZE);
         g2.fill(baseControlPoint);
-        g2.drawLine(xpos, ypos, xpos - (int) (ed.triangleWidget.radius * binWidth * ed.maxGradientMagnitude), 0);
-        g2.drawLine(xpos, ypos, xpos + (int) (ed.triangleWidget.radius * binWidth * ed.maxGradientMagnitude), 0);
-        radiusControlPoint = new Ellipse2D.Double(xpos + (ed.triangleWidget.radius * binWidth * ed.maxGradientMagnitude) - DOTSIZE / 2,  0, DOTSIZE, DOTSIZE);
+        g2.drawLine(xpos, ypos, xpos - (int) (ed.tf2D.radius * binWidth * ed.maxGradientMagnitude), 0);
+        g2.drawLine(xpos, ypos, xpos + (int) (ed.tf2D.radius * binWidth * ed.maxGradientMagnitude), 0);
+        radiusControlPoint = new Ellipse2D.Double(xpos + (ed.tf2D.radius * binWidth * ed.maxGradientMagnitude) - DOTSIZE / 2,  0, DOTSIZE, DOTSIZE);
         g2.fill(radiusControlPoint);
     }
     
@@ -120,9 +122,9 @@ public class TransferFunction2DView extends javax.swing.JPanel {
                 double h = getHeight();
                 double binWidth = (double) w / (double) ed.xbins;
                 if (selectedBaseControlPoint) {
-                    ed.triangleWidget.baseIntensity = (short) (dragEnd.x / binWidth);
+                    ed.tf2D.baseIntensity = (short) (dragEnd.x / binWidth);
                 } else if (selectedRadiusControlPoint) {
-                    ed.triangleWidget.radius = (dragEnd.x - (ed.triangleWidget.baseIntensity * binWidth))/(binWidth*ed.maxGradientMagnitude);
+                    ed.tf2D.radius = (dragEnd.x - (ed.tf2D.baseIntensity * binWidth))/(binWidth*ed.maxGradientMagnitude);
                 }
                 ed.setSelectedInfo();
                 

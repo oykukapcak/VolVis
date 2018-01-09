@@ -14,6 +14,9 @@ import java.util.Scanner;
  *
  * @author michel
  */
+
+// You should just use this class you do not need to change this class
+// You should just use it to read the data if need.
 public class VolumeIO {
 	//Do NOT modify this function
     public VolumeIO(File file) throws IOException {
