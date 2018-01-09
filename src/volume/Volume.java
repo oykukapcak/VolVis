@@ -20,11 +20,22 @@ public class Volume {
 	
     //This function linearly interpolates the value g0 and g1 given the factor (t) 
     //the result is returned. You can use it to tri-linearly interpolate the values 
-	private float interpolate(float g0, float g1, float factor) {
+	private float interpolate1D(float g0, float g1, float factor) {
         float result=0;
-        // to be implemented
+        float x0 = (float)Math.floor(factor);
+        float x1 = (float)Math.ceil(factor);
+        float x = factor;
+        
+        result = (x - x0)*(g1 - g0)/(x1 - x0) + g0;
         return result; 
     }
+       //g0 - value at 0,0, g1 - value at 0,1, g2 - value at 1,0, g3 - value at 1,1
+        private float interpolate2D(float g0, float g1, float g2, float g3, float factor_x, float factor_y){
+            float x_result1 = interpolate1D(g0, g2, factor_x);
+            float x_result2 = interpolate1D(g1, g3, factor_x);
+            float result = interpolate1D(x_result1, x_result2, factor_y);
+            return result;
+        }
 	
 	//You have to implement the trilinear interpolation of the volume
 	//First implement the interpolated function above
@@ -36,13 +47,32 @@ public class Volume {
             return 0;
         }
         /* notice that in this framework we assume that the distance between neighbouring voxels is 1 in all directions*/
-        int x = (int) Math.floor(coord[0]); 
-        int y = (int) Math.floor(coord[1]);
-        int z = (int) Math.floor(coord[2]);
+        int x0 = (int) Math.floor(coord[0]); 
+        int y0 = (int) Math.floor(coord[1]);
+        int z0 = (int) Math.floor(coord[2]);
+        int x1 = x0 + 1;
+        int y1 = y0 + 1;
+        int z1 = z0 + 1;
         
+        double x = coord[0];
+        double y = coord[1];
+        double z = coord[2];
+        
+        short c000 = getVoxel(x0,y0,z0);
+        short c001 = getVoxel(x0,y0,z1);
+        short c010 = getVoxel(x0,y1,z0);
+        short c100 = getVoxel(x1,y0,z0);
+        short c011 = getVoxel(x0,y1,z1);
+        short c101 = getVoxel(x1,y0,z1);
+        short c110 = getVoxel(x1,y1,z0);
+        short c111 = getVoxel(x1,y1,z1);
+        
+        float result_z0 = interpolate2D(c000, c010, c100, c110, (float)x, (float)y);
+        float result_z1 = interpolate2D(c001, c011, c101, c111, (float)x, (float)y);
+        float result = interpolate1D(result_z0, result_z1, (float)z);
         // To be implemented
             
-        return getVoxel(x,y,z); 
+        return (short)result;
     }
 		
 	//////////////////////////////////////////////////////////////////////
@@ -60,7 +90,6 @@ public class Volume {
         int x = (int) Math.round(coord[0]); 
         int y = (int) Math.round(coord[1]);
         int z = (int) Math.round(coord[2]);
-    
         return getVoxel(x, y, z);
     }
 	
