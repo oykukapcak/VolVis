@@ -153,9 +153,6 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
     }
     
     
-    int getPixelColor(){
-        
-    }
     
     int traceRayComposite(double[] entryPoint, double[] exitPoint, double[] rayVector, double sampleStep) {
         double[] lightVector = new double[3];
@@ -164,17 +161,49 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
         //half vector is used to speed up the phong shading computation see slides
         getLightVector(lightVector,halfVector,rayVector);
         
-        // You need to implement the rest of the function for compositing.    
-
-        // Example color you have to substitute it by the result of the MIP 
-        double r=1;
-        double g=1;
-        double b=0;
-        double alpha=1; 
+       double d = 0;
+        for(int i = 0; i < entryPoint.length; i++){
+            d += Math.pow(exitPoint[i]-entryPoint[i], 2);
+        }
+        d = Math.sqrt(d);
         
-        //computes the color
-        int color = computeImageColor(r,g,b,alpha);
-        return color;
+        //Number of samples n
+        int n = (int)Math.floor(d/sampleStep);
+        //Ratio of distances
+        double t = sampleStep/d;
+        double[][] samples = new double[n+1][3];
+        double[] sampleValues = new double[n+1];
+        double[] coord = new double[3];
+        //Starting from entry point
+        for(int i = 0; i < entryPoint.length; i++){
+            samples[0][i] = entryPoint[i];
+        }
+        
+        sampleValues[0] = volume.getVoxelLinearInterpolate(entryPoint);
+        
+        for(int i = 1; i < n+1; i++){
+            for(int j = 0; j < entryPoint.length; j++){
+                samples[i][j] = sampleCalc(entryPoint[j],exitPoint[j],t,i);
+                coord[j] = samples[i][j];
+            }
+            sampleValues[i] = volume.getVoxelLinearInterpolate(coord);
+        }
+        double color = sampleValues[1];
+        
+        
+        for(int i = 2; i < 0 + 1; i++){
+            color = sampleValues[i] + (1-sampleValues[i]/volume.getMaximum())*color;
+        }
+        TFColor voxelColor = new TFColor();
+        // Example color, you have to substitute it by the result of the MIP 
+        voxelColor.r = color/volume.getMaximum();
+        voxelColor.g = voxelColor.r;
+        voxelColor.b = voxelColor.r;
+
+        voxelColor.a = color/volume.getMaximum();   
+
+        int color2 = computeImageColor(voxelColor.r,voxelColor.g,voxelColor.b,voxelColor.a);
+        return color2;
     }
     
     void raycast(double[] viewMatrix) {
