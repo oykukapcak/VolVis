@@ -188,28 +188,13 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
             }
             sampleValues[i] = volume.getVoxelLinearInterpolate(coord);
         }
-<<<<<<< HEAD
-        double color = sampleValues[0];
-        
-        
-        for(int i = 1; i < n + 1; i++){
-            color = sampleValues[i] + (1-sampleValues[i]/volume.getMaximum())*color;
-        }
-        TFColor voxelColor = new TFColor();
-        // Example color, you have to substitute it by the result of the MIP 
-        voxelColor.r = color/volume.getMaximum();
-        voxelColor.g = voxelColor.r;
-        voxelColor.b = voxelColor.r;
 
-        voxelColor.a = color/volume.getMaximum();   
-=======
         int intensity = sampleValues[0];
       
         TFColor color_new = new TFColor();
         TFColor color_old = tFunc.getColor(intensity);
         
         for(int i = 1; i < n+1; i++){
->>>>>>> b9a2f10174a381d3459409b400a5f359ce7741a1
 
             int intensity_curr = sampleValues[i];
             TFColor color_curr = tFunc.getColor(intensity_curr);
