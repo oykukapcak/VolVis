@@ -172,7 +172,7 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
         //Ratio of distances
         double t = sampleStep/d;
         double[][] samples = new double[n+1][3];
-        double[] sampleValues = new double[n+1];
+        int[] sampleValues = new int[n+1];
         double[] coord = new double[3];
         //Starting from entry point
         for(int i = 0; i < entryPoint.length; i++){
@@ -188,6 +188,7 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
             }
             sampleValues[i] = volume.getVoxelLinearInterpolate(coord);
         }
+<<<<<<< HEAD
         double color = sampleValues[0];
         
         
@@ -201,9 +202,30 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
         voxelColor.b = voxelColor.r;
 
         voxelColor.a = color/volume.getMaximum();   
+=======
+        int intensity = sampleValues[0];
+      
+        TFColor color_new = new TFColor();
+        TFColor color_old = tFunc.getColor(intensity);
+        
+        for(int i = 1; i < n+1; i++){
+>>>>>>> b9a2f10174a381d3459409b400a5f359ce7741a1
 
-        int color2 = computeImageColor(voxelColor.r,voxelColor.g,voxelColor.b,voxelColor.a);
-        return color2;
+            int intensity_curr = sampleValues[i];
+            TFColor color_curr = tFunc.getColor(intensity_curr);
+            
+            //front-to-back compositing
+            
+            color_new.r = color_old.r*color_old.a + (1-color_old.a)*color_curr.r;
+            color_new.g = color_old.g*color_old.a  + (1-color_old.a)*color_curr.g;
+            color_new.b = color_old.b*color_old.a  + (1-color_old.a)*color_curr.b;
+            color_new.a = color_old.a + (1-color_old.a)*color_curr.a;
+            
+            color_old = color_new;
+        }
+        
+        int color = computeImageColor(color_new.r,color_new.g,color_new.b,color_new.a);
+        return color;
     }
     
     void raycast(double[] viewMatrix) {
