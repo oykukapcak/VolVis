@@ -188,10 +188,10 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
             }
             sampleValues[i] = volume.getVoxelLinearInterpolate(coord);
         }
-        double color = sampleValues[1];
+        double color = sampleValues[0];
         
         
-        for(int i = 2; i < 0 + 1; i++){
+        for(int i = 1; i < n + 1; i++){
             color = sampleValues[i] + (1-sampleValues[i]/volume.getMaximum())*color;
         }
         TFColor voxelColor = new TFColor();
