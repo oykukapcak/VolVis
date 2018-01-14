@@ -103,7 +103,7 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
     //Implementation of the MIP per ray  given the entry and exit point and the ray direction
     // sampleStep indicates the distance between samples
     // To be implemented
-    int traceRayMIP(double[] entryPoint, double[] exitPoint, double[] rayVector, double sampleStep) {
+    int traceRayMIP(double[] entryPoint, double[] exitPoint, double[] rayVector, double sampleStep, double m) {
         //(Euclidean) Distance between entry and exit
         double d = 0;
         for(int i = 0; i < entryPoint.length; i++){
@@ -131,6 +131,7 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
                 coord[j] = samples[i][j];
             }
             sampleValues[i] = volume.getVoxelLinearInterpolate(coord);
+
         }
         double max = 0;
         
@@ -142,7 +143,7 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
 
         // Example color, you have to substitute it by the result of the MIP 
         TFColor voxelColor = new TFColor();
-        voxelColor.r = max/volume.getMaximum();
+        voxelColor.r = max/m;
         voxelColor.g = voxelColor.r;
         voxelColor.b = voxelColor.r;
 
@@ -205,7 +206,6 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
             color_new.g = color_old.g*color_old.a  + (1-color_old.a)*color_curr.g;
             color_new.b = color_old.b*color_old.a  + (1-color_old.a)*color_curr.b;
             color_new.a = color_old.a + (1-color_old.a)*color_curr.a;
-            
             color_old = color_new;
         }
         
@@ -226,7 +226,10 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
         // ray parameters
         int increment = 1;
         double sampleStep = 1.0;
-      
+        
+        if(interactiveMode){
+            increment = 3;
+        }
         
         // reset the image to black
         resetImage();
@@ -238,7 +241,7 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
         rayVector[0]=-viewVec[0];rayVector[1]=-viewVec[1];rayVector[2]=-viewVec[2];
         
         // We use orthographic projection. Viewer is far away at the infinite, all pixels have the same rayVector.
-        
+        double max = volume.getMaximum();
         // ray computation for each pixel
         for (int j = 0; j < image.getHeight(); j += increment) {
             for (int i = 0; i < image.getWidth(); i += increment) {
@@ -251,7 +254,7 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
                     if (compositingMode || tf2dMode) {
                         val = traceRayComposite(entryPoint, exitPoint, rayVector, sampleStep);
                     } else if (mipMode) {
-                        val = traceRayMIP(entryPoint, exitPoint, rayVector, sampleStep);
+                        val = traceRayMIP(entryPoint, exitPoint, rayVector, sampleStep, max);
                     }
                     for (int ii = i; ii < i + increment; ii++) {
                         for (int jj = j; jj < j + increment; jj++) {
