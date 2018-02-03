@@ -143,6 +143,37 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
         return sampleValues;
     }
     
+    VoxelGradient[] getSampleGradientValues(double[] entryPoint, double[] exitPoint, double[] rayVector, double sampleStepSize){
+                //(Euclidean) Distance between entry and exit
+        double d = 0;
+        //Compute distance between exit point, entry point
+        for(int i = 0; i < entryPoint.length; i++){
+            d += Math.pow(exitPoint[i]-entryPoint[i], 2);
+        }
+        d = Math.sqrt(d);
+        
+        //Number of samples n
+        int n = (int)Math.floor(d/sampleStepSize);
+        //samplestep as fraction of distance
+        double sampleStep = sampleStepSize/d;
+        //Store sample coordinates (n+1; the 1 is to account for the starting point)
+        VoxelGradient[] sampleGradientValues = new VoxelGradient[n+1];
+        double[] coord = new double[3];
+        
+        sampleGradientValues[0] = gradients.getGradient(entryPoint);
+        //sampleValues[0] = volume.getVoxelLinearInterpolate(entryPoint);
+        
+        for(int i = 1; i < n+1; i++){
+            for(int j = 0; j < entryPoint.length; j++){
+                coord[j] = sampleCalc(entryPoint[j],exitPoint[j],sampleStep,i);
+            }
+            sampleGradientValues[i] = gradients.getGradient(coord);
+            //System.out.println(sampleGradientValues[i].mag);
+        }
+        return sampleGradientValues;
+    }
+    
+    
     //Implementation of the MIP per ray  given the entry and exit point and the ray direction
     // sampleStep indicates the distance between samples
     /**
@@ -179,6 +210,18 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
         return color;
     }
     
+    double computeLevoyOpacity(double intensity, double radius, double voxel_intensity, double gradient) {
+        
+        double opacity = 0.0;
+        if(gradient == 0.0 && voxel_intensity == intensity) {
+            opacity = 1.0;
+        }
+        else if (gradient > 0 && voxel_intensity - radius*gradient <= intensity && intensity <= voxel_intensity + radius*gradient){
+            opacity = 1.0 - Math.abs((intensity - voxel_intensity) / gradient) / radius;
+        } 
+
+        return opacity;
+    }
     
     /**
      * Compute the intensity values of the samples along a ray rayVector that enters at entryPoint
@@ -203,32 +246,56 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
         //Array of intensity values of each sample
         int[] sampleValues = getSampleValues(entryPoint, exitPoint, rayVector, sampleStepSize);
         int n = sampleValues.length;
+        
+        VoxelGradient [] sampleGradientValues = getSampleGradientValues(entryPoint, exitPoint, rayVector, sampleStepSize);
+        
+       
         //Old accumulated color
         double r = 0;
         double g = 0;
         double b = 0;
         double a = 0;
-        double r_sample;
-        double g_sample;
-        double b_sample;
-        double a_sample;
+        double opacity = 0;
+       
         TFColor sample = new TFColor();
-        //Threshold of opacity at which we stop computing
+        TFColor voxel_color = new TFColor();
+       
+    //Threshold of opacity at which we stop computing
         for(int i = n-1; i>-1; i--){
             int intensity_sample = sampleValues[i];
-            //Color of current 
-            sample = tFunc.getColor(intensity_sample);
+            VoxelGradient gradient = sampleGradientValues[i];
+            //System.out.println("gradient mag:" + gradient.mag);
+            //System.out.println("intensity sample:" + intensity_sample);
+            if(compositingMode) {
+                //Color of current 
+                sample = tFunc.getColor(intensity_sample);
+                voxel_color.r =sample.r;voxel_color.g =sample.g;voxel_color.b =sample.b;voxel_color.a =sample.a;
+                opacity = voxel_color.a;
+            }
+            
+            if(tf2dMode) {
+                sample = tFunc2D.color;
+                voxel_color.r =sample.r;voxel_color.g =sample.g;voxel_color.b =sample.b;voxel_color.a =sample.a;
+                opacity = tFunc2D.color.a; //why not voxel_color.a;
+                opacity *= computeLevoyOpacity(tFunc2D.baseIntensity, tFunc2D.radius, intensity_sample, gradient.mag);
+            }
+            
             //back to front compositing
-            r = sample.a*sample.r + (1 - sample.a)*r;
-            g = sample.a*sample.g + (1 - sample.a)*g;
-            b = sample.a*sample.b + (1 - sample.a)*b;
-            a = sample.a + (1-sample.a)*a;
+            r = opacity*voxel_color.r + (1 - opacity)*r;
+            g = opacity*voxel_color.g + (1 - opacity)*g;
+            b = opacity*voxel_color.b + (1 - opacity)*b;
+            a = opacity + (1-opacity)*a;
         }
+
+        
+       
+        
         
         int color = computeImageColor(r,g,b,a);
         return color;
     }
     
+<<<<<<< HEAD
     private phongShading(TFColor color, Gradient gradient, double[] lightVector, double[] halfVector){
         double k_a = 0.1;
         double k_d = 0.7;
@@ -249,6 +316,9 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
         }
     }
     
+=======
+
+>>>>>>> f32ccf762913fd6c327b6162cbd464ce2dd27e93
     void raycast(double[] viewMatrix) {
 
     	//data allocation
