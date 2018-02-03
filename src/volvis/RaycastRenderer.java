@@ -287,10 +287,6 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
             b = opacity*voxel_color.b + (1 - opacity)*b;
             a = opacity + (1-opacity)*a;
         }
-
-        
-       
-        
         
         int color = computeImageColor(r,g,b,a);
         return color;
