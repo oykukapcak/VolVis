@@ -156,7 +156,7 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
     /**
      * Compute the intensity values of the samples along a ray rayVector that enters at entryPoint
      * and exits at exitPoint, via trilinear interpolation, with samples spaced apart by sampleStepSize.
-     * Then the value of the pixel is determined by the maximum intensity along the ray. TotalMax gives the 
+     * Then the color of the pixel is determined by the maximum intensity along the ray. TotalMax gives the 
      * intensity over the entire volume.
      * @param entryPoint - coordinates of entry point
      * @param exitPoint - coordinates of exit point
@@ -188,7 +188,18 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
     }
     
     
-    
+    /**
+     * Compute the intensity values of the samples along a ray rayVector that enters at entryPoint
+     * and exits at exitPoint, via trilinear interpolation, with samples spaced apart by sampleStepSize.
+     * Then the color of the pixel is determined by color compositing. TotalMax gives the 
+     * intensity over the entire volume.
+     * @param entryPoint - coordinates of entry point
+     * @param exitPoint - coordinates of exit point
+     * @param rayVector - direction of ray vector
+     * @param sampleStepSize - distance between samples
+     * @param totalMax - the max over all pixels
+     * @return Color along ray
+     */
     int traceRayComposite(double[] entryPoint, double[] exitPoint, double[] rayVector, double sampleStepSize) {
         double[] lightVector = new double[3];
         double[] halfVector = new double[3];
@@ -196,6 +207,7 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
         //half vector is used to speed up the phong shading computation see slides
         getLightVector(lightVector,halfVector,rayVector);
         double d = 0;
+        
         //Compute distance between exit point, entry point
         for(int i = 0; i < entryPoint.length; i++){
             d += Math.pow(exitPoint[i]-entryPoint[i], 2);
@@ -203,28 +215,28 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
         d = Math.sqrt(d);
         int n = (int)Math.floor(d/sampleStepSize);
         
+        //Array of intensity values of each sample
         int[] sampleValues = getSampleValues(entryPoint, exitPoint, rayVector, sampleStepSize);
-
+        //Start from the front
         int intensity = sampleValues[0];
-      
-        TFColor color_new = new TFColor();
-        TFColor color_old = tFunc.getColor(intensity);
-        
+        //New accumulated color
+        TFColor color_new_combined = new TFColor();
+        //Old accumulated color
+        TFColor color_old_combined = tFunc.getColor(intensity);
+        //Threshold of opacity at which we stop computing
         for(int i = 1; i < n+1; i++){
-
             int intensity_curr = sampleValues[i];
+            //Color of current 
             TFColor color_curr = tFunc.getColor(intensity_curr);
-            
             //front-to-back compositing
-            
-            color_new.r = color_old.r*color_old.a + (1-color_old.a)*color_curr.r*color_curr.a;
-            color_new.g = color_old.g*color_old.a  + (1-color_old.a)*color_curr.g*color_curr.a;
-            color_new.b = color_old.b*color_old.a  + (1-color_old.a)*color_curr.b*color_curr.a;
-            color_new.a = color_old.a + (1-color_old.a)*color_curr.a;
-            color_old = color_new;
+            color_new_combined .r = color_old_combined.r*color_old_combined.a + (1-color_old_combined.a)*color_curr.r;
+            color_new_combined .g = color_old_combined.g*color_old_combined.a  + (1-color_old_combined.a)*color_curr.g;
+            color_new_combined .b = color_old_combined.b*color_old_combined.a  + (1-color_old_combined.a)*color_curr.b;
+            color_new_combined .a = color_old_combined.a + (1-color_old_combined.a)*color_curr.a;
+            color_old_combined = color_new_combined ;
         }
         
-        int color = computeImageColor(color_new.r,color_new.g,color_new.b,color_new.a);
+        int color = computeImageColor(color_new_combined.r,color_new_combined.g,color_new_combined.b,color_new_combined.a);
         return color;
     }
     
@@ -243,7 +255,9 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
         int increment = 1;
         double sampleStep = 1.0;
         
+        //Lower resolution, increase distance between samples during interactive mode
         if(interactiveMode){
+            sampleStep = 1.0;
             increment = 3;
         }
         
