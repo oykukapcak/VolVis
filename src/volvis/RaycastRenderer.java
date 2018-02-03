@@ -96,82 +96,40 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
 	    }
 	}
     
-
-    double sampleCalc(double x0, double x1, double t, double i){
-        return (1-t*i)*x0 + t*i*x1;
+/**
+ * Calculate the i'th sample coordinate (along one of the three axes) along a ray
+ * @param entry
+ * @param exit
+ * @param t
+ * @param i
+ * @return 
+ */
+    double sampleCalc(double entry, double exit, double t, double i){
+        return (1-t*i)*entry + t*i*exit;
     }
-    //Implementation of the MIP per ray  given the entry and exit point and the ray direction
-    // sampleStep indicates the distance between samples
-    // To be implemented
-    int traceRayMIP(double[] entryPoint, double[] exitPoint, double[] rayVector, double sampleStep, double m) {
-        //(Euclidean) Distance between entry and exit
+    
+    /**
+     * Get sample values along a ray
+     * @param entryPoint array of double that gives entry point of ray
+     * @param exitPoint array of double that gives exit point of ray
+     * @param rayVector array of double that gives direction of ray
+     * @param sampleStepSize double that gives sample step size of ray
+     * @return array of doubles that contain intensity values of each sample
+     */
+    int[] getSampleValues(double[] entryPoint, double[] exitPoint, double[] rayVector, double sampleStepSize){
+                //(Euclidean) Distance between entry and exit
         double d = 0;
+        //Compute distance between exit point, entry point
         for(int i = 0; i < entryPoint.length; i++){
             d += Math.pow(exitPoint[i]-entryPoint[i], 2);
         }
         d = Math.sqrt(d);
         
         //Number of samples n
-        int n = (int)Math.floor(d/sampleStep);
-        //Ratio of distances
-        double t = sampleStep/d;
-        double[][] samples = new double[n+1][3];
-        double[] sampleValues = new double[n+1];
-        double[] coord = new double[3];
-        //Starting from entry point
-        for(int i = 0; i < entryPoint.length; i++){
-            samples[0][i] = entryPoint[i];
-        }
-        
-        sampleValues[0] = volume.getVoxelLinearInterpolate(entryPoint);
-        
-        for(int i = 1; i < n+1; i++){
-            for(int j = 0; j < entryPoint.length; j++){
-                samples[i][j] = sampleCalc(entryPoint[j],exitPoint[j],t,i);
-                coord[j] = samples[i][j];
-            }
-            sampleValues[i] = volume.getVoxelLinearInterpolate(coord);
-
-        }
-        double max = 0;
-        
-        for(int i = 0; i < sampleValues.length; i++){
-            if(max < sampleValues[i]){
-                max = sampleValues[i];
-            }
-        }
-
-        // Example color, you have to substitute it by the result of the MIP 
-        TFColor voxelColor = new TFColor();
-        voxelColor.r = max/m;
-        voxelColor.g = voxelColor.r;
-        voxelColor.b = voxelColor.r;
-
-        voxelColor.a = max > 0 ? 1.0 : 0.0;   
-
-        int color = computeImageColor(voxelColor.r,voxelColor.g,voxelColor.b,voxelColor.a);
-        return color;
-    }
-    
-    
-    
-    int traceRayComposite(double[] entryPoint, double[] exitPoint, double[] rayVector, double sampleStep) {
-        double[] lightVector = new double[3];
-        double[] halfVector = new double[3];
-        //the light vector is directed toward the view point (which is the source of the light)
-        //half vector is used to speed up the phong shading computation see slides
-        getLightVector(lightVector,halfVector,rayVector);
-        
-       double d = 0;
-        for(int i = 0; i < entryPoint.length; i++){
-            d += Math.pow(exitPoint[i]-entryPoint[i], 2);
-        }
-        d = Math.sqrt(d);
-        
-        //Number of samples n
-        int n = (int)Math.floor(d/sampleStep);
-        //Ratio of distances
-        double t = sampleStep/d;
+        int n = (int)Math.floor(d/sampleStepSize);
+        //samplestep as fraction of distance
+        double sampleStep = sampleStepSize/d;
+        //Store sample coordinates (n+1; the 1 is to account for the starting point)
         double[][] samples = new double[n+1][3];
         int[] sampleValues = new int[n+1];
         double[] coord = new double[3];
@@ -184,11 +142,68 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
         
         for(int i = 1; i < n+1; i++){
             for(int j = 0; j < entryPoint.length; j++){
-                samples[i][j] = sampleCalc(entryPoint[j],exitPoint[j],t,i);
+                samples[i][j] = sampleCalc(entryPoint[j],exitPoint[j],sampleStep,i);
                 coord[j] = samples[i][j];
             }
             sampleValues[i] = volume.getVoxelLinearInterpolate(coord);
+
         }
+        return sampleValues;
+    }
+    
+    //Implementation of the MIP per ray  given the entry and exit point and the ray direction
+    // sampleStep indicates the distance between samples
+    /**
+     * Compute the intensity values of the samples along a ray rayVector that enters at entryPoint
+     * and exits at exitPoint, via trilinear interpolation, with samples spaced apart by sampleStepSize.
+     * Then the value of the pixel is determined by the maximum intensity along the ray. TotalMax gives the 
+     * intensity over the entire volume.
+     * @param entryPoint - coordinates of entry point
+     * @param exitPoint - coordinates of exit point
+     * @param rayVector - direction of ray vector
+     * @param sampleStepSize - distance between samples
+     * @param totalMax - the max over all pixels
+     * @return Color along ray
+     */
+    int traceRayMIP(double[] entryPoint, double[] exitPoint, double[] rayVector, double sampleStepSize, double totalMax) {
+        int[] sampleValues = getSampleValues(entryPoint,exitPoint,rayVector,sampleStepSize);
+        double max = 0;
+        
+        for(int i = 0; i < sampleValues.length; i++){
+            if(max < sampleValues[i]){
+                max = sampleValues[i];
+            }
+        }
+
+        // Example color, you have to substitute it by the result of the MIP 
+        TFColor voxelColor = new TFColor();
+        voxelColor.r = max/totalMax;
+        voxelColor.g = voxelColor.r;
+        voxelColor.b = voxelColor.r;
+
+        voxelColor.a = max > 0 ? 1.0 : 0.0;   
+
+        int color = computeImageColor(voxelColor.r,voxelColor.g,voxelColor.b,voxelColor.a);
+        return color;
+    }
+    
+    
+    
+    int traceRayComposite(double[] entryPoint, double[] exitPoint, double[] rayVector, double sampleStepSize) {
+        double[] lightVector = new double[3];
+        double[] halfVector = new double[3];
+        //the light vector is directed toward the view point (which is the source of the light)
+        //half vector is used to speed up the phong shading computation see slides
+        getLightVector(lightVector,halfVector,rayVector);
+        double d = 0;
+        //Compute distance between exit point, entry point
+        for(int i = 0; i < entryPoint.length; i++){
+            d += Math.pow(exitPoint[i]-entryPoint[i], 2);
+        }
+        d = Math.sqrt(d);
+        int n = (int)Math.floor(d/sampleStepSize);
+        
+        int[] sampleValues = getSampleValues(entryPoint, exitPoint, rayVector, sampleStepSize);
 
         int intensity = sampleValues[0];
       
@@ -202,9 +217,9 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
             
             //front-to-back compositing
             
-            color_new.r = color_old.r*color_old.a + (1-color_old.a)*color_curr.r;
-            color_new.g = color_old.g*color_old.a  + (1-color_old.a)*color_curr.g;
-            color_new.b = color_old.b*color_old.a  + (1-color_old.a)*color_curr.b;
+            color_new.r = color_old.r*color_old.a + (1-color_old.a)*color_curr.r*color_curr.a;
+            color_new.g = color_old.g*color_old.a  + (1-color_old.a)*color_curr.g*color_curr.a;
+            color_new.b = color_old.b*color_old.a  + (1-color_old.a)*color_curr.b*color_curr.a;
             color_new.a = color_old.a + (1-color_old.a)*color_curr.a;
             color_old = color_new;
         }
