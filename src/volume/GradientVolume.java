@@ -21,12 +21,15 @@ public class GradientVolume {
 	//
 	//This is a lengthy computation and is performed only once (have a look at the constructor GradientVolume) 
 
-    // You need to implement this function
+ // This function computes the magnitude of the local gradient vector at each data point
+    //and stores it into the data attribute. 
     private void compute() {
 
         for (int i=0; i<data.length; i++) {
             data[i] = zero;
         }
+        
+        //computes the gradient in each axes seperately
         for(int x = 1; x<dimX-1; x++){
             for(int y = 1; y<dimY-1; y++){
                 for(int z = 1; z<dimZ-1; z++){
@@ -41,22 +44,36 @@ public class GradientVolume {
                 }
             }
         }
-        // to be implemented
     }
     	
-    //You need to implement this function
-    //This function linearly interpolates gradient vector g0 and g1 given the factor (t) 
-    //the resut is given at result. You can use it to tri-linearly interpolate the gradient
+    //This function linearly interpolates gradient vector g0 and g1 given the factor (t).
     private void interpolate(VoxelGradient g0, VoxelGradient g1, float factor, VoxelGradient result) {
 
+        /**
         float x = g1.x*(1 - factor)/factor + g0.x;
         float y = g1.y*(1 - factor)/factor + g0.y;
         float z = g1.z*(1 - factor)/factor + g0.z;
-  
+        **/
+        float x = g1.x*(1-factor) + g0.x*factor;
+        float y = g1.y*(1-factor) + g0.y*factor;
+        float z = g1.z*(1-factor) + g0.z*factor;
+        
         result = new VoxelGradient(x,y,z); 
     }
 
-    //g0 - value at 0,0, g1 - value at 0,1, g2 - value at 1,0, g3 - value at 1,1
+    //We first interpolate between the lower x axis (x0, x2), then the upper x axis (x1, x3), and then
+    //we interpolate these two results.
+    /**
+     * 
+     * @param g0 - value at "left" vertex on lower x axis
+     * @param g1 - value at "left" vertex on upper x axis
+     * @param g2 - value at "right" vertex on lower x axis
+     * @param g3 - value at "left" vertex on upper x axis
+     * @param factor_1 - factor between the 2 x axes
+     * @param factor_2 - factor between the interpolated values
+     * @return 
+     */
+ 
     private void interpolate2D(VoxelGradient g0, VoxelGradient g1, VoxelGradient g2, VoxelGradient g3, float factor_1, float factor_2, VoxelGradient result){
         VoxelGradient ans1 = null;
         VoxelGradient ans2 = null;
@@ -87,6 +104,7 @@ public class GradientVolume {
         double y = coord[1];
         double z = coord[2];
         
+        //get the gradients at each vertices 
         VoxelGradient c000 = getGradient(x0,y0,z0);
         VoxelGradient c001 = getGradient(x0,y0,z1);
         VoxelGradient c010 = getGradient(x0,y1,z0);
@@ -100,13 +118,12 @@ public class GradientVolume {
         VoxelGradient ans2 = null;
         VoxelGradient ans3 = null;
         
+        //compute the interpolated gradients
         interpolate2D(c000, c010, c100, c110, (float) (x - x0), (float) (y - y0), ans1);
         interpolate2D(c001, c011, c101, c111, (float) (x - x0), (float) (y - y0), ans2);
         interpolate(ans1, ans2, (float) z - z0, ans3);
         return ans3;
     }
-    
-    
     
     //////////////////////////////////////////////////////////////////////
     //////////////////////////////////////////////////////////////////////
