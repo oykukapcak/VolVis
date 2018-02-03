@@ -97,15 +97,16 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
 	}
     
 /**
- * Calculate the i'th sample coordinate (along one of the three axes) along a ray
- * @param entry
- * @param exit
- * @param t
- * @param i
+ * Calculate the ith sample coordinate (along one of the three axes) along a ray
+ * @param entry - double, entry point
+ * @param exit - double, exit point
+ * @param sampleStep - double distance between samples as fraction of length of ray
+ * @param i - int, sample number
  * @return 
  */
-    double sampleCalc(double entry, double exit, double t, double i){
-        return (1-t*i)*entry + t*i*exit;
+    double sampleCalc(double entry, double exit, double sampleStep, int i){
+        //return (1-t*i)*entry + t*i*exit;
+        return (exit - entry)*sampleStep*i + entry;
     }
     
     /**
@@ -130,23 +131,15 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
         //samplestep as fraction of distance
         double sampleStep = sampleStepSize/d;
         //Store sample coordinates (n+1; the 1 is to account for the starting point)
-        double[][] samples = new double[n+1][3];
         int[] sampleValues = new int[n+1];
         double[] coord = new double[3];
-        //Starting from entry point
-        for(int i = 0; i < entryPoint.length; i++){
-            samples[0][i] = entryPoint[i];
-        }
-        
         sampleValues[0] = volume.getVoxelLinearInterpolate(entryPoint);
-        
-        for(int i = 1; i < n+1; i++){
+        sampleValues[n] = volume.getVoxelLinearInterpolate(exitPoint);
+        for(int i = 1; i < n; i++){
             for(int j = 0; j < entryPoint.length; j++){
-                samples[i][j] = sampleCalc(entryPoint[j],exitPoint[j],sampleStep,i);
-                coord[j] = samples[i][j];
+                coord[j] = sampleCalc(entryPoint[j],exitPoint[j],sampleStep,i);
             }
             sampleValues[i] = volume.getVoxelLinearInterpolate(coord);
-
         }
         return sampleValues;
     }
@@ -206,17 +199,10 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
         //the light vector is directed toward the view point (which is the source of the light)
         //half vector is used to speed up the phong shading computation see slides
         getLightVector(lightVector,halfVector,rayVector);
-        double d = 0;
-        
-        //Compute distance between exit point, entry point
-        for(int i = 0; i < entryPoint.length; i++){
-            d += Math.pow(exitPoint[i]-entryPoint[i], 2);
-        }
-        d = Math.sqrt(d);
-        int n = (int)Math.floor(d/sampleStepSize);
         
         //Array of intensity values of each sample
         int[] sampleValues = getSampleValues(entryPoint, exitPoint, rayVector, sampleStepSize);
+        int n = sampleValues.length;
         //Start from the front
         int intensity = sampleValues[0];
         //New accumulated color
@@ -224,15 +210,15 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
         //Old accumulated color
         TFColor color_old_combined = tFunc.getColor(intensity);
         //Threshold of opacity at which we stop computing
-        for(int i = 1; i < n+1; i++){
+        for(int i = 1; i < n; i++){
             int intensity_curr = sampleValues[i];
             //Color of current 
             TFColor color_curr = tFunc.getColor(intensity_curr);
             //front-to-back compositing
-            color_new_combined .r = color_old_combined.r*color_old_combined.a + (1-color_old_combined.a)*color_curr.r;
-            color_new_combined .g = color_old_combined.g*color_old_combined.a  + (1-color_old_combined.a)*color_curr.g;
-            color_new_combined .b = color_old_combined.b*color_old_combined.a  + (1-color_old_combined.a)*color_curr.b;
-            color_new_combined .a = color_old_combined.a + (1-color_old_combined.a)*color_curr.a;
+            color_new_combined.r = color_old_combined.r*color_old_combined.a + (1-color_old_combined.a)*color_curr.r;
+            color_new_combined.g = color_old_combined.g*color_old_combined.a  + (1-color_old_combined.a)*color_curr.g;
+            color_new_combined.b = color_old_combined.b*color_old_combined.a  + (1-color_old_combined.a)*color_curr.b;
+            color_new_combined.a = color_old_combined.a + (1-color_old_combined.a)*color_curr.a;
             color_old_combined = color_new_combined ;
         }
         
