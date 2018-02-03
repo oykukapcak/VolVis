@@ -134,12 +134,12 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
         int[] sampleValues = new int[n+1];
         double[] coord = new double[3];
         sampleValues[0] = volume.getVoxelLinearInterpolate(entryPoint);
-        sampleValues[n] = volume.getVoxelLinearInterpolate(exitPoint);
-        for(int i = 1; i < n; i++){
+        for(int i = 1; i < n+1; i++){
             for(int j = 0; j < entryPoint.length; j++){
                 coord[j] = sampleCalc(entryPoint[j],exitPoint[j],sampleStep,i);
             }
             sampleValues[i] = volume.getVoxelLinearInterpolate(coord);
+            
         }
         return sampleValues;
     }
@@ -193,6 +193,7 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
      * @param totalMax - the max over all pixels
      * @return Color along ray
      */
+     
     int traceRayComposite(double[] entryPoint, double[] exitPoint, double[] rayVector, double sampleStepSize) {
         double[] lightVector = new double[3];
         double[] halfVector = new double[3];
@@ -203,26 +204,29 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
         //Array of intensity values of each sample
         int[] sampleValues = getSampleValues(entryPoint, exitPoint, rayVector, sampleStepSize);
         int n = sampleValues.length;
-        //Start from the front
-        int intensity = sampleValues[0];
-        //New accumulated color
-        TFColor color_new_combined = new TFColor();
         //Old accumulated color
-        TFColor color_old_combined = tFunc.getColor(intensity);
+        double r = 0;
+        double g = 0;
+        double b = 0;
+        double a = 0;
+        double r_sample;
+        double g_sample;
+        double b_sample;
+        double a_sample;
+        TFColor sample = new TFColor();
         //Threshold of opacity at which we stop computing
-        for(int i = 1; i < n; i++){
-            int intensity_curr = sampleValues[i];
+        for(int i = n-1; i>-1; i--){
+            int intensity_sample = sampleValues[i];
             //Color of current 
-            TFColor color_curr = tFunc.getColor(intensity_curr);
-            //front-to-back compositing
-            color_new_combined.r = color_old_combined.r*color_old_combined.a + (1-color_old_combined.a)*color_curr.r;
-            color_new_combined.g = color_old_combined.g*color_old_combined.a  + (1-color_old_combined.a)*color_curr.g;
-            color_new_combined.b = color_old_combined.b*color_old_combined.a  + (1-color_old_combined.a)*color_curr.b;
-            color_new_combined.a = color_old_combined.a + (1-color_old_combined.a)*color_curr.a;
-            color_old_combined = color_new_combined ;
+            sample = tFunc.getColor(intensity_sample);
+            //back to front compositing
+            r = sample.a*sample.r + (1 - sample.a)*r;
+            g = sample.a*sample.g + (1 - sample.a)*g;
+            b = sample.a*sample.b + (1 - sample.a)*b;
+            a = sample.a + (1-sample.a)*a;
         }
         
-        int color = computeImageColor(color_new_combined.r,color_new_combined.g,color_new_combined.b,color_new_combined.a);
+        int color = computeImageColor(r,g,b,a);
         return color;
     }
     
