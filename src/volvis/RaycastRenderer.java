@@ -224,8 +224,8 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
         double[] exitPoint = new double[3];
 
         // ray parameters
-        int increment = 1;
-        double sampleStep = 1.0;
+        int increment = 3;
+        double sampleStep = 1;
       
         
         // reset the image to black

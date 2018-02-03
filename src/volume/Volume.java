@@ -18,21 +18,30 @@ public class Volume {
 	///////////////// TO BE IMPLEMENTED //////////////////////////////////
 	//////////////////////////////////////////////////////////////////////
 	
-    //This function linearly interpolates the value g0 and g1 given the factor (t) 
+    //This function linearly interpolates the value x0 and x1 given the factor (t) 
     //the result is returned. You can use it to tri-linearly interpolate the values 
 	private float interpolate1D(float g0, float g1, float factor) {
         float result=0;
         float x0 = (float)Math.floor(factor);
-        float x1 = (float)Math.ceil(factor);
         float x = factor;
-        
-        result = (x - x0)*(g1 - g0)/(x1 - x0) + g0;
+        result = (x - x0)*(g1 - g0)+ g0;
         return result; 
     }
-       //g0 - value at 0,0, g1 - value at 0,1, g2 - value at 1,0, g3 - value at 1,1
-        private float interpolate2D(float g0, float g1, float g2, float g3, float factor_x, float factor_y){
-            float x_result1 = interpolate1D(g0, g2, factor_x);
-            float x_result2 = interpolate1D(g1, g3, factor_x);
+       //We first interpolate between the lower x axis (x0, x2), then the upper x axis (x1, x3), and then
+       //we interpolate by
+        /**
+         * 
+         * @param x0 - "left" vertex on lower x axis
+         * @param x1 - "left" vertex on upper x axis
+         * @param x2 - "right" vertex on lower x axis
+         * @param x3 - "left" vertex on upper x axis
+         * @param factor_x - x-point between the 2 x axes
+         * @param factor_y - y-point between the interpolated values
+         * @return 
+         */
+        private float interpolate2D(float x0, float x1, float x2, float x3, float factor_x, float factor_y){
+            float x_result1 = interpolate1D(x0, x2, factor_x);
+            float x_result2 = interpolate1D(x1, x3, factor_x);
             float result = interpolate1D(x_result1, x_result2, factor_y);
             return result;
         }
@@ -58,6 +67,7 @@ public class Volume {
         double y = coord[1];
         double z = coord[2];
         
+        // get the vertices of the cube
         short c000 = getVoxel(x0,y0,z0);
         short c001 = getVoxel(x0,y0,z1);
         short c010 = getVoxel(x0,y1,z0);
@@ -70,7 +80,6 @@ public class Volume {
         float result_z0 = interpolate2D(c000, c010, c100, c110, (float)x, (float)y);
         float result_z1 = interpolate2D(c001, c011, c101, c111, (float)x, (float)y);
         float result = interpolate1D(result_z0, result_z1, (float)z);
-        // To be implemented
             
         return (short)result;
     }
