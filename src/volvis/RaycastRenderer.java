@@ -331,13 +331,16 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
         double[] L = lightVector;
         
         double[] R = new double[3];
-        for(int i = 0; i<R.length; i++){
-            R[i] = 2*n*L[i]*N[i] - L[i];
+        double NL = VectorMath.dotproduct(N,L);
+        double[] NLN = new double[3];
+        for(int i = 0; i<NLN.length; i++){
+            R[i] = 2*NL*N[i] - L[i];
         }
         
         double[] V = rayVector;
+        VectorMath.setVector(V, V[0]/VectorMath.length(V),V[1]/VectorMath.length(V), V[2]/VectorMath.length(V));
         for(int i = 0; i<V.length; i++){
-            V[i] = -V[i];
+            V[i] = V[i];
         }
         
         double diffuse = VectorMath.dotproduct(L,N);
@@ -347,7 +350,7 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
         for(int i = 0; i< C.length; i ++){
             C[i] = k_a*c[i] + 
                     k_d*c[i]*diffuse + 
-                    k_s*c[i]*Math.pow(specular,n);
+                    k_s*Math.pow(specular,n);
         }
         color.r = C[0];
         color.g = C[1];
