@@ -22,9 +22,7 @@ public class Volume {
     //the result is returned. You can use it to tri-linearly interpolate the values 
 	private float interpolate1D(float g0, float g1, float factor) {
         float result=0;
-        float x0 = (float)Math.floor(factor);
-        float x = factor;
-        result = (x - x0)*(g1 - g0)+ g0;
+        result = factor*(g1 - g0)+ g0;
         return result; 
     }
        //We first interpolate between the lower x axis (x0, x2), then the upper x axis (x1, x3), and then
@@ -63,9 +61,9 @@ public class Volume {
         int y1 = y0 + 1;
         int z1 = z0 + 1;
         
-        double x = coord[0];
-        double y = coord[1];
-        double z = coord[2];
+        double x = coord[0] - x0;
+        double y = coord[1] - y0;
+        double z = coord[2] - z0;
         
         // get the vertices of the cube
         short c000 = getVoxel(x0,y0,z0);

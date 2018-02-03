@@ -117,7 +117,7 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
      * @param sampleStepSize double that gives sample step size of ray
      * @return array of doubles that contain intensity values of each sample
      */
-    int[] getSampleValues(double[] entryPoint, double[] exitPoint, double[] rayVector, double sampleStepSize){
+    int[] getSamples(double[] entryPoint, double[] exitPoint, double[] rayVector, double sampleStepSize){
                 //(Euclidean) Distance between entry and exit
         double d = 0;
         //Compute distance between exit point, entry point
@@ -125,21 +125,20 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
             d += Math.pow(exitPoint[i]-entryPoint[i], 2);
         }
         d = Math.sqrt(d);
-        
         //Number of samples n
         int n = (int)Math.floor(d/sampleStepSize);
         //samplestep as fraction of distance
         double sampleStep = sampleStepSize/d;
         //Store sample coordinates (n+1; the 1 is to account for the starting point)
         int[] sampleValues = new int[n+1];
-        double[] coord = new double[3];
+        double[][] coord = new double[n+1][3];
+        coord[0][n+1] = entryPoint;
         sampleValues[0] = volume.getVoxelLinearInterpolate(entryPoint);
         for(int i = 1; i < n+1; i++){
             for(int j = 0; j < entryPoint.length; j++){
                 coord[j] = sampleCalc(entryPoint[j],exitPoint[j],sampleStep,i);
             }
-            sampleValues[i] = volume.getVoxelLinearInterpolate(coord);
-            
+            sampleValues[i] = volume.getVoxelLinearInterpolate(coord); 
         }
         return sampleValues;
     }
@@ -228,6 +227,26 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
         
         int color = computeImageColor(r,g,b,a);
         return color;
+    }
+    
+    private phongShading(TFColor color, Gradient gradient, double[] lightVector, double[] halfVector){
+        double k_a = 0.1;
+        double k_d = 0.7;
+        double k_s = 0.2;
+        double alfa = 10;
+        
+        double[] N = new double[3];
+        double mag = gradient.mag;
+        double[] L = lightVector;
+        double[] H = halfVector;
+        double[] color = new double[3];
+        N[0] = gradient.x/mag;
+        N[1] = gradient.y/mag;
+        N[2] = gradient.z/mag;
+        
+        for(int i = 0; i<color.length; i ++){
+            
+        }
     }
     
     void raycast(double[] viewMatrix) {
