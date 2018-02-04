@@ -20,8 +20,16 @@ public class Volume {
 	
     //This function linearly interpolates the value x0 and x1 given the factor (t) 
     //the result is returned. You can use it to tri-linearly interpolate the values 
+    /**
+     * 
+     * @param g0 value at first position, double
+     * @param g1 value at second position, double
+     * @param factor the location of desired position as a fraction of the distance between g0, g1
+     * @return 
+     */
 	private float interpolate1D(float g0, float g1, float factor) {
         float result=0;
+        //Linearly determine the value of positi
         result = factor*(g1 - g0)+ g0;
         return result; 
     }
@@ -38,8 +46,11 @@ public class Volume {
          * @return 
          */
         private float interpolate2D(float x0, float x1, float x2, float x3, float factor_x, float factor_y){
+            //Interpolate between x's on top x-axis
             float x_result1 = interpolate1D(x0, x2, factor_x);
+            //Interpolate between x's on bottom x-axis
             float x_result2 = interpolate1D(x1, x3, factor_x);
+            //Interpolate between results of previous interpolations
             float result = interpolate1D(x_result1, x_result2, factor_y);
             return result;
         }
@@ -75,8 +86,11 @@ public class Volume {
         short c110 = getVoxel(x1,y1,z0);
         short c111 = getVoxel(x1,y1,z1);
         
+        //2d interpolate the bottom plane of the cube
         float result_z0 = interpolate2D(c000, c010, c100, c110, (float)x, (float)y);
+        //2d interpolate the top plane of the cube
         float result_z1 = interpolate2D(c001, c011, c101, c111, (float)x, (float)y);
+        //1d interpolate between the two interpolated values of bottom and top plane
         float result = interpolate1D(result_z0, result_z1, (float)z);
             
         return (short)result;

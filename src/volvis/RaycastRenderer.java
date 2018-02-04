@@ -208,14 +208,17 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
         return color;
     }
     
-    double computeLevoyOpacity(double intensity, double radius, double voxel_intensity, double gradient) {
+    double computeLevoyOpacity(double intensity, double radius, double voxel_intensity, double gradientMag) {
         
         double opacity = 0.0;
-        if(gradient == 0.0 && voxel_intensity == intensity) {
+        if(gradientMag == 0.0 && 
+                voxel_intensity == intensity) {
             opacity = 1.0;
         }
-        else if (gradient > 0 && voxel_intensity - radius*gradient <= intensity && intensity <= voxel_intensity + radius*gradient){
-            opacity = 1.0 - Math.abs((intensity - voxel_intensity) / gradient) / radius;
+        else if (gradientMag > 0 && 
+                voxel_intensity - radius*gradientMag <= intensity && 
+                intensity <= voxel_intensity + radius*gradientMag){
+            opacity = 1.0 - Math.abs((intensity - voxel_intensity) / gradientMag) / radius;
         } 
 
         return opacity;
@@ -273,7 +276,7 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
             
             if(tf2dMode) {
                 sample = tFunc2D.color;
-                if(gradient.mag > tFunc2D.min && gradient.mag < tFunc2D.max){
+                if(gradient.mag >= tFunc2D.min && gradient.mag <= tFunc2D.max){
                     voxel_color.r =sample.r;voxel_color.g =sample.g;voxel_color.b =sample.b;voxel_color.a =sample.a;
                     opacity = tFunc2D.color.a; //why not voxel_color.a;
                     opacity *= computeLevoyOpacity(tFunc2D.baseIntensity, tFunc2D.radius, intensity_sample, gradient.mag);
@@ -301,59 +304,84 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
             }
             
             //back to front compositing
+            if(opacity > 0){
             r = opacity*voxel_color.r + (1 - opacity)*r;
             g = opacity*voxel_color.g + (1 - opacity)*g;
             b = opacity*voxel_color.b + (1 - opacity)*b;
             a = opacity + (1-opacity)*a;
+            }
         }
         
         int color = computeImageColor(r,g,b,a);
         return color;
     }
-
+    /**
+     * Function that performs phong-shading
+     * @param color - color of the voxel
+     * @param gradient - gradient of voxel
+     * @param lightVector - vector that gives direction of light
+     * @param rayVector - ray is the light reflected on the surface
+     * @return new color of the voxel
+     */
     private TFColor phongShading(TFColor color, VoxelGradient gradient, double[] lightVector, double[] rayVector){
+        //Material property constants
         double k_a = 0.1;
         double k_d = 0.7;
         double k_s = 0.2;
         double n = 10;
         
+        //Array containing the colors for each channel so we can loop over
+        //it more easily
         double[] c = new double[3];
         c[0] = color.r;
         c[1] = color.g;
         c[2] = color.b;
         
+        //The surface normal
         double[] N = new double[3];
         double mag = gradient.mag;
         N[0] = gradient.x/mag;
         N[1] = gradient.y/mag;
         N[2] = gradient.z/mag;
         
+        //The lightVector
         double[] L = lightVector;
-        
+        //The reflected ray of light coming from the surface
         double[] R = new double[3];
         double NL = VectorMath.dotproduct(N,L);
-        double[] NLN = new double[3];
-        for(int i = 0; i<NLN.length; i++){
+        for(int i = 0; i<R.length; i++){
             R[i] = 2*NL*N[i] - L[i];
         }
-        VectorMath.setVector(R, R[0]/VectorMath.length(R),R[1]/VectorMath.length(R), R[2]/VectorMath.length(R));
-        double[] V = rayVector;
-        VectorMath.setVector(V, V[0]/VectorMath.length(V),V[1]/VectorMath.length(V), V[2]/VectorMath.length(V));
-        for(int i = 0; i<V.length; i++){
-            V[i] = V[i];
-        }
+        //Normalize R
+        VectorMath.setVector(R, 
+                R[0]/VectorMath.length(R),
+                R[1]/VectorMath.length(R), 
+                R[2]/VectorMath.length(R));
         
+        //View is taken as the ray vector, as they are the same vector but in opposing directions
+        //This does not seem to matter in practice
+        double[] V = rayVector;
+        //Normalize V
+        VectorMath.setVector(V, 
+                V[0]/VectorMath.length(V),
+                V[1]/VectorMath.length(V), 
+                V[2]/VectorMath.length(V));
+        
+        //Calculate dot product terms for diffuse/specular respectively
         double diffuse = VectorMath.dotproduct(L,N);
         double specular = VectorMath.dotproduct(V,R);
         
+        //compute final colors
         double[] C = new double[3];
         for(int i = 0; i< C.length; i ++){
+            //The ambient term, l_a = 1;
             C[i] = k_a*c[i];
-            if(diffuse > 0){
+            
+            if(diffuse > 0){ //Term should only be included if dotproduct positive
                 C[i] += k_d*c[i]*diffuse;
             }
-            if(diffuse > 0 && specular > 0){
-                C[i] += k_s*c[i]*Math.pow(specular,n);
+            if(diffuse > 0 && specular > 0){ //idem
+                C[i] += k_s*Math.pow(specular,n);
             }
 
                     

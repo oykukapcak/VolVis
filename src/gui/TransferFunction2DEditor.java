@@ -309,8 +309,7 @@ public class TransferFunction2DEditor extends javax.swing.JPanel {
         }
     }
 */
-    private javax.swing.JTextField maxGradientLabel;
-    private javax.swing.JTextField minGradientLabel;
+
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JButton colorButton;
     private javax.swing.JTextField intensityLabel;
