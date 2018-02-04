@@ -359,13 +359,12 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
                 R[2]/VectorMath.length(R));
         
         //View is taken as the ray vector, as they are the same vector but in opposing directions
-        //This does not seem to matter in practice
         double[] V = rayVector;
         //Normalize V
         VectorMath.setVector(V, 
-                V[0]/VectorMath.length(V),
-                V[1]/VectorMath.length(V), 
-                V[2]/VectorMath.length(V));
+                -V[0]/VectorMath.length(V),
+                -V[1]/VectorMath.length(V), 
+                -V[2]/VectorMath.length(V));
         
         //Calculate dot product terms for diffuse/specular respectively
         double diffuse = VectorMath.dotproduct(L,N);
@@ -410,7 +409,7 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
         
         //Lower resolution, increase distance between samples during interactive mode
         if(interactiveMode){
-            sampleStep = 1.0;
+            sampleStep = 2.0;
             increment = 3;
         }
         
