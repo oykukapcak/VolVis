@@ -21,7 +21,7 @@ public class GradientVolume {
 	//
 	//This is a lengthy computation and is performed only once (have a look at the constructor GradientVolume) 
 
- // This function computes the magnitude of the local gradient vector at each data point
+    // This function computes the magnitude of the local gradient vector at each data point
     //and stores it into the data attribute. 
     private void compute() {
 
@@ -47,6 +47,13 @@ public class GradientVolume {
     }
     	
     //This function linearly interpolates gradient vector g0 and g1 given the factor (t).
+    /**
+     * 
+     * @param g0 - gradient of left end of the line
+     * @param g1 - gradient of right end of the line
+     * @param factor - actual point that we want find its gradient
+     * @return - interpolated gradient
+     */
     private VoxelGradient interpolate(VoxelGradient g0, VoxelGradient g1, float factor) {
 
         
@@ -62,10 +69,10 @@ public class GradientVolume {
     //we interpolate these two results.
     /**
      * 
-     * @param g0 - value at "left" vertex on lower x axis
-     * @param g1 - value at "left" vertex on upper x axis
-     * @param g2 - value at "right" vertex on lower x axis
-     * @param g3 - value at "left" vertex on upper x axis
+     * @param g0 - gradient at "left" vertex on lower x axis
+     * @param g1 - gradient at "left" vertex on upper x axis
+     * @param g2 - gradient at "right" vertex on lower x axis
+     * @param g3 - gradient at "left" vertex on upper x axis
      * @param factor_1 - factor between the 2 x axes
      * @param factor_2 - factor between the interpolated values
      * @return 
@@ -79,7 +86,6 @@ public class GradientVolume {
         return result;
     }
     
-    // You need to implement this function
     // This function returns the gradient at position coord using trilinear interpolation
     public VoxelGradient getGradient(double[] coord) {
 
