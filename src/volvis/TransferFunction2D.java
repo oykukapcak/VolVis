@@ -13,6 +13,8 @@ public class TransferFunction2D {
     public short baseIntensity;
     public double radius;
     public TFColor color;
+    public double max = Double.POSITIVE_INFINITY;
+    public double min = Double.NEGATIVE_INFINITY;
         
 
         public TransferFunction2D(short base, double r) {

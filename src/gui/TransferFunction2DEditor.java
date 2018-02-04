@@ -84,8 +84,8 @@ public class TransferFunction2DEditor extends javax.swing.JPanel {
         for (int i = 0; i < volumeSize; i++) {
             short voxelVal = vol.getVoxel(i);
             VoxelGradient grad = gradvol.getVoxel(i);
-            int yPos = (int) Math.floor(((ybins - 1) * grad.mag) / maxGradientMagnitude);
-            histogram[yPos * xbins + voxelVal] += 1;
+                int yPos = (int) Math.floor(((ybins - 1) * grad.mag) / maxGradientMagnitude);
+                histogram[yPos * xbins + voxelVal] += 1;
         }
     }
 
@@ -161,7 +161,6 @@ public class TransferFunction2DEditor extends javax.swing.JPanel {
 
         jLabel6.setText("Color");
 
-        colorButton.setBounds(new java.awt.Rectangle(0, 0, 75, 29));
         colorButton.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 colorButtonActionPerformed(evt);
@@ -213,7 +212,7 @@ public class TransferFunction2DEditor extends javax.swing.JPanel {
                                     .addComponent(opacityLabel, javax.swing.GroupLayout.PREFERRED_SIZE, 84, javax.swing.GroupLayout.PREFERRED_SIZE)
                                     .addComponent(intensityLabel, javax.swing.GroupLayout.PREFERRED_SIZE, 84, javax.swing.GroupLayout.PREFERRED_SIZE)))
                             .addComponent(colorButton, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.PREFERRED_SIZE, 75, javax.swing.GroupLayout.PREFERRED_SIZE))
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 73, Short.MAX_VALUE)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                         .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
                             .addGroup(layout.createSequentialGroup()
                                 .addComponent(jLabel3)
@@ -310,6 +309,8 @@ public class TransferFunction2DEditor extends javax.swing.JPanel {
         }
     }
 */
+    private javax.swing.JTextField maxGradientLabel;
+    private javax.swing.JTextField minGradientLabel;
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JButton colorButton;
     private javax.swing.JTextField intensityLabel;

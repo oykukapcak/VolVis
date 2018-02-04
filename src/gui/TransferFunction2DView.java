@@ -29,6 +29,10 @@ public class TransferFunction2DView extends javax.swing.JPanel {
     public Ellipse2D.Double baseControlPoint, radiusControlPoint;
     boolean selectedBaseControlPoint, selectedRadiusControlPoint;
     
+    public Ellipse2D.Double minGradControlPoint, maxGradControlPoint;
+    boolean selectedMinGradControlPoint, selectedMaxGradControlPoint;
+    int minStart = this.getHeight();
+    int maxStart = 0;
     
     /**
      * Creates new form TransferFunction2DView
@@ -40,6 +44,8 @@ public class TransferFunction2DView extends javax.swing.JPanel {
         this.ed = ed;
         selectedBaseControlPoint = false;
         selectedRadiusControlPoint = false;
+        selectedMinGradControlPoint = false;
+        selectedMaxGradControlPoint = false;
         addMouseMotionListener(new TriangleWidgetHandler());
         addMouseListener(new SelectionHandler());
     }
@@ -79,10 +85,21 @@ public class TransferFunction2DView extends javax.swing.JPanel {
         g2.setColor(Color.black);
         baseControlPoint = new Ellipse2D.Double(xpos - DOTSIZE / 2, ypos - DOTSIZE, DOTSIZE, DOTSIZE);
         g2.fill(baseControlPoint);
+
         g2.drawLine(xpos, ypos, xpos - (int) (ed.tf2D.radius * binWidth * ed.maxGradientMagnitude), 0);
         g2.drawLine(xpos, ypos, xpos + (int) (ed.tf2D.radius * binWidth * ed.maxGradientMagnitude), 0);
         radiusControlPoint = new Ellipse2D.Double(xpos + (ed.tf2D.radius * binWidth * ed.maxGradientMagnitude) - DOTSIZE / 2,  0, DOTSIZE, DOTSIZE);
         g2.fill(radiusControlPoint);
+        
+        if(minStart == 0){
+            minStart = h;
+        }
+        minGradControlPoint = new Ellipse2D.Double(0, minStart - DOTSIZE / 2, DOTSIZE, DOTSIZE);
+        maxGradControlPoint = new Ellipse2D.Double(0, maxStart - DOTSIZE / 2 , DOTSIZE, DOTSIZE);
+        g2.drawLine(0,minStart,w,minStart);
+        g2.drawLine(0,maxStart,w,maxStart);
+        g2.fill(minGradControlPoint);
+        g2.fill(maxGradControlPoint);
     }
     
     
@@ -90,7 +107,10 @@ public class TransferFunction2DView extends javax.swing.JPanel {
 
         @Override
         public void mouseMoved(MouseEvent e) {
-            if (baseControlPoint.contains(e.getPoint()) || radiusControlPoint.contains(e.getPoint())) {
+            if (baseControlPoint.contains(e.getPoint()) || 
+                    radiusControlPoint.contains(e.getPoint()) || 
+                    minGradControlPoint.contains(e.getPoint()) ||
+                    maxGradControlPoint.contains(e.getPoint())) {
                 setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
             } else {
                 setCursor(Cursor.getDefaultCursor());
@@ -99,7 +119,9 @@ public class TransferFunction2DView extends javax.swing.JPanel {
         
         @Override
         public void mouseDragged(MouseEvent e) {
-            if (selectedBaseControlPoint || selectedRadiusControlPoint) {
+            if (selectedBaseControlPoint || selectedRadiusControlPoint ||
+                    selectedMinGradControlPoint ||
+                    selectedMaxGradControlPoint) {
                 Point dragEnd = e.getPoint();
                 
                 if (selectedBaseControlPoint) {
@@ -111,6 +133,10 @@ public class TransferFunction2DView extends javax.swing.JPanel {
                     if (dragEnd.x - baseControlPoint.getCenterX() <= 0) {
                         dragEnd.x = (int) (baseControlPoint.getCenterX() + 1);
                     }
+                }else if (selectedMinGradControlPoint){
+                    dragEnd.setLocation(0, dragEnd.y);
+                }else if (selectedMaxGradControlPoint){
+                    dragEnd.setLocation(0, dragEnd.y);
                 }
                 if (dragEnd.x < 0) {
                     dragEnd.x = 0;
@@ -125,6 +151,20 @@ public class TransferFunction2DView extends javax.swing.JPanel {
                     ed.tf2D.baseIntensity = (short) (dragEnd.x / binWidth);
                 } else if (selectedRadiusControlPoint) {
                     ed.tf2D.radius = (dragEnd.x - (ed.tf2D.baseIntensity * binWidth))/(binWidth*ed.maxGradientMagnitude);
+                } else if (selectedMaxGradControlPoint){
+                    if(dragEnd.y < minStart){
+                        maxStart = dragEnd.y;
+                    }else{
+                        maxStart = minStart - 1;
+                    }
+                    ed.tf2D.max = (1 - maxStart/h)*ed.maxGradientMagnitude; 
+                } else if (selectedMinGradControlPoint){
+                    if(dragEnd.y > maxStart){
+                        minStart = dragEnd.y;
+                    }else{
+                        minStart = maxStart + 1;
+                    }
+                    ed.tf2D.min = (1 - minStart/h)*ed.maxGradientMagnitude; 
                 }
                 ed.setSelectedInfo();
                 
@@ -142,9 +182,15 @@ public class TransferFunction2DView extends javax.swing.JPanel {
                 selectedBaseControlPoint = true;
             } else if (radiusControlPoint.contains(e.getPoint())) {
                 selectedRadiusControlPoint = true;
+            } else if (minGradControlPoint.contains(e.getPoint())) {
+                selectedMinGradControlPoint = true;
+            } else if (maxGradControlPoint.contains(e.getPoint())) {
+                selectedMaxGradControlPoint = true;
             } else {
                 selectedRadiusControlPoint = false;
                 selectedBaseControlPoint = false;
+                selectedMaxGradControlPoint = false;
+                selectedMinGradControlPoint = false;
             }
         }
         
@@ -152,6 +198,8 @@ public class TransferFunction2DView extends javax.swing.JPanel {
         public void mouseReleased(MouseEvent e) {
             selectedRadiusControlPoint = false;
             selectedBaseControlPoint = false;
+            selectedMaxGradControlPoint = false;
+            selectedMinGradControlPoint = false;
             ed.changed();
             repaint();
         }

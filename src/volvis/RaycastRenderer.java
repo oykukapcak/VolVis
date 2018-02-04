@@ -273,9 +273,13 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
             
             if(tf2dMode) {
                 sample = tFunc2D.color;
-                voxel_color.r =sample.r;voxel_color.g =sample.g;voxel_color.b =sample.b;voxel_color.a =sample.a;
-                opacity = tFunc2D.color.a; //why not voxel_color.a;
-                opacity *= computeLevoyOpacity(tFunc2D.baseIntensity, tFunc2D.radius, intensity_sample, gradient.mag);
+                if(gradient.mag > tFunc2D.min && gradient.mag < tFunc2D.max){
+                    voxel_color.r =sample.r;voxel_color.g =sample.g;voxel_color.b =sample.b;voxel_color.a =sample.a;
+                    opacity = tFunc2D.color.a; //why not voxel_color.a;
+                    opacity *= computeLevoyOpacity(tFunc2D.baseIntensity, tFunc2D.radius, intensity_sample, gradient.mag);
+                }else{
+                    opacity = 0;
+                }
             }
             
             if(shadingMode){
