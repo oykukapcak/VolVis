@@ -29,9 +29,14 @@ public class TransferFunction2DView extends javax.swing.JPanel {
     public Ellipse2D.Double baseControlPoint, radiusControlPoint;
     boolean selectedBaseControlPoint, selectedRadiusControlPoint;
     
+    //The selectable points for selecting min and max line respectively
     public Ellipse2D.Double minGradControlPoint, maxGradControlPoint;
+    //Bools that determine whether they are selected
     boolean selectedMinGradControlPoint, selectedMaxGradControlPoint;
+    
+    //Bottom line y
     int minStart = this.getHeight();
+    //Top line y
     int maxStart = 0;
     
     /**
@@ -91,14 +96,19 @@ public class TransferFunction2DView extends javax.swing.JPanel {
         radiusControlPoint = new Ellipse2D.Double(xpos + (ed.tf2D.radius * binWidth * ed.maxGradientMagnitude) - DOTSIZE / 2,  0, DOTSIZE, DOTSIZE);
         g2.fill(radiusControlPoint);
         
+        //Our part
         if(minStart == 0){
             minStart = h;
         }
+        //Defining points and lines, and their colors
         minGradControlPoint = new Ellipse2D.Double(0, minStart - DOTSIZE / 2, DOTSIZE, DOTSIZE);
-        maxGradControlPoint = new Ellipse2D.Double(0, maxStart - DOTSIZE / 2 , DOTSIZE, DOTSIZE);
+        g2.setColor(Color.BLUE);
         g2.drawLine(0,minStart,w,minStart);
-        g2.drawLine(0,maxStart,w,maxStart);
         g2.fill(minGradControlPoint);
+        
+        maxGradControlPoint = new Ellipse2D.Double(0, maxStart - DOTSIZE / 2 , DOTSIZE, DOTSIZE);
+        g2.setColor(Color.RED);
+        g2.drawLine(0,maxStart,w,maxStart);
         g2.fill(maxGradControlPoint);
     }
     
@@ -151,20 +161,33 @@ public class TransferFunction2DView extends javax.swing.JPanel {
                     ed.tf2D.baseIntensity = (short) (dragEnd.x / binWidth);
                 } else if (selectedRadiusControlPoint) {
                     ed.tf2D.radius = (dragEnd.x - (ed.tf2D.baseIntensity * binWidth))/(binWidth*ed.maxGradientMagnitude);
-                } else if (selectedMaxGradControlPoint){
-                    if(dragEnd.y < minStart){
+                    
+                } else if (selectedMaxGradControlPoint){ //maximum of gradient range
+                    if(dragEnd.y < minStart && dragEnd.y <= h && dragEnd.y >= 0){ //If within panel, set to final drag point
                         maxStart = dragEnd.y;
-                    }else{
+                    }else if(dragEnd.y >= minStart){ //max line can't go below min line
                         maxStart = minStart - 1;
+                    }else if(dragEnd.y < 0){ // max line can't go beyond top of panel
+                        maxStart = 0;
+                    }else if(dragEnd.y > h){ // max line can't go beyond bottom of panel
+                        maxStart= (int)h;
                     }
+                    //Set max gradient
                     ed.tf2D.max = (1 - maxStart/h)*ed.maxGradientMagnitude; 
-                } else if (selectedMinGradControlPoint){
-                    if(dragEnd.y > maxStart){
+                } else if (selectedMinGradControlPoint){ //minimum of gradient range
+                    if(dragEnd.y > maxStart && dragEnd.y <= h && dragEnd.y >= 0){ //
                         minStart = dragEnd.y;
-                    }else{
+                    }else if(dragEnd.y <= maxStart){ //min line can't exceed max line
                         minStart = maxStart + 1;
+                    }else if(dragEnd.y < 0){ // min line can't go beyond top of panel
+                        minStart = 0;
+                    }else if(dragEnd.y > h){ // min line can't go beyond bottom of panel
+                        minStart = (int)h;
                     }
+                    //Set min gradient
                     ed.tf2D.min = (1 - minStart/h)*ed.maxGradientMagnitude; 
+                    System.out.println(ed.tf2D.min);
+
                 }
                 ed.setSelectedInfo();
                 
